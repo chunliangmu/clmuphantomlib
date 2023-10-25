@@ -92,7 +92,7 @@ def _json_encode(
                 raise ValueError
             obj['_meta_'] = {
                 '_version_myformatter_': CURRENT_VERSION,
-                '_datetime_utcnow_': datetime.utcnow().isoformat(),
+                '_created_time_utc_': datetime.utcnow().isoformat(),
             }
             # note: no need to parse data since we will do it anyway in the next step
             if isinstance(metadata, dict):
