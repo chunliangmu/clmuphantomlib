@@ -60,7 +60,7 @@ def get_photosphere_on_ray(
     do_skip_zero_dtau_pts : bool = True,
     photosphere_tau : float = 1.,
     iverbose : int = 0,
-) -> (dict, np.ndarray, np.ndarray, np.ndarray):
+) -> (dict, (np.ndarray, np.ndarray, np.ndarray)):
     """Calc the location where the photosphere intersect with the ray.
 
     
@@ -125,7 +125,7 @@ def get_photosphere_on_ray(
 
     Returns
     -------
-    photosphere, pts_waypts, pts_waypts_t, taus_waypts
+    photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
 
     photosphere: dict
         dict of values found at the photosphere intersection point with the ray.
@@ -214,4 +214,4 @@ def get_photosphere_on_ray(
             raise NotImplementedError()
         if 'T' in calc_params:
             raise NotImplementedError()
-    return photosphere, pts_waypts, pts_waypts_t, taus_waypts
+    return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
