@@ -93,9 +93,14 @@ def get_photosphere_on_ray(
     calc_params: list or tuple of str
         parameters to be calculated / interpolated at the photosphere location.
         Results will be put into the photosphere dict in the output.
-        Acceptable input:
+        Acceptable input: (Note: will always calc 'loc' if calc_params is not empty)
+            'is_found': will return bool.
+                Will always be outputted regardless of in calc_params or not.
             'loc': will return (3,)-shaped numpy array.
                 photophere location.
+            'R1 ': will return float.
+                distance between photosphere location and the ray[0].
+                Could be negative if loc is on the other side of the ray.
             #'h'  : will return float.
             #    smoothing length at the photosphere.
             #'T'  : will return float.
@@ -125,10 +130,11 @@ def get_photosphere_on_ray(
 
     Returns
     -------
-    photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
+    photosphere, waypts_list = (pts_waypts, pts_waypts_t, taus_waypts)
 
     photosphere: dict
         dict of values found at the photosphere intersection point with the ray.
+        will always have 
 
     pts_waypts: (npart, 3)-shaped numpy array
         location of the waypoints on ray
@@ -200,18 +206,21 @@ def get_photosphere_on_ray(
         
 
     # prepare answers
-    photosphere = {}
+    photosphere = {
+        'is_found': (taus_waypts[-1] > photosphere_tau),
+    }
     
     # get photosphere
-    if taus_waypts[-1] > photosphere_tau:
-        # photosphere found
-        if 'loc' in calc_params:
-            photosphere['loc'] = np.array([
-                np.interp(photosphere_tau, taus_waypts, pts_waypts[:, ax], right=np.nan)
-                for ax in range(pts_waypts.shape[1])
-            ])
-        if 'h' in calc_params:
-            raise NotImplementedError()
-        if 'T' in calc_params:
-            raise NotImplementedError()
+    if calc_params:
+        # always calc location if anything needs to be calc-ed
+        photosphere['loc'] = np.array([
+            np.interp(photosphere_tau, taus_waypts, pts_waypts[:, ax], right=np.nan)
+            for ax in range(pts_waypts.shape[1])
+        ])
+    if 'R1' in calc_params:
+        photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
+    if 'h'  in calc_params:
+        raise NotImplementedError()
+    if 'T'  in calc_params:
+        raise NotImplementedError()
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
