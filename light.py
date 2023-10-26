@@ -49,11 +49,11 @@ def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
 
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_photosphere_on_ray(
     pts_on_ray, dtaus, pts_order,
     sdf, ray,
-    calc_params : list = ['loc',],
+    calc_params : list = ['loc', 'R1'],
     hfact : float = None,
     ray_unit_vec : np.ndarray = None,
     kernel: sarracen.kernels.base_kernel = None,
