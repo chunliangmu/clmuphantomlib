@@ -9,7 +9,7 @@ Owner: Chunliang Mu
 
 
 
-def _is_verbose(iverbose: int, iverbose_req: {int, None}) -> bool:
+def _is_verbose(iverbose: int|bool, iverbose_req: int|None) -> bool:
     """Test if we should be verbose."""
     if iverbose_req is None or isinstance(iverbose, bool):
         return iverbose
@@ -19,10 +19,10 @@ def _is_verbose(iverbose: int, iverbose_req: {int, None}) -> bool:
 
 
 def error(
-    iverbose: int,
+    iverbose: int|bool,
     orig: str,
     msg : str,
-    iverbose_req: int = None,
+    iverbose_req: int|None = None,
 ):
     """Show an error message.
 
@@ -49,10 +49,10 @@ def error(
 
 
 def warn(
-    iverbose: int,
+    iverbose: int|bool,
     orig: str,
     msg : str,
-    iverbose_req: int = 2,
+    iverbose_req: int|None = 2,
 ):
     """Show a warning message.
 
@@ -79,10 +79,10 @@ def warn(
 
 
 def note(
-    iverbose: int,
+    iverbose: int|bool,
     orig: str,
     msg : str,
-    iverbose_req: int = 3,
+    iverbose_req: int|None = 3,
 ):
     """Show a note message.
 
@@ -108,10 +108,10 @@ def note(
 
 
 def debug_info(
-    iverbose: int,
+    iverbose: int|bool,
     orig: str,
     msg : str,
-    iverbose_req: int = 4,
+    iverbose_req: int|None = 4,
 ):
     """Show a debug info message.
 
