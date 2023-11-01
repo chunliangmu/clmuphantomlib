@@ -28,6 +28,7 @@ Assuming temperature unit being K. Reads & handles other units from phantom data
 
 
 # my libs
+from .log import error, warn, note, debug_info
 from .geometry import *
 
 
@@ -36,7 +37,7 @@ from .geometry import *
 
 
 import math
-from warnings import warn
+#from warnings import warn
 import numpy as np
 from numpy import pi
 from scipy import optimize
@@ -225,8 +226,8 @@ def get_sph_interp(
     """
 
     # warn if try to interp unexpected quantities
-    if iverbose >= 1 and target not in ['rho', 'u', 'vx', 'vy', 'vz']:
-        warn(f"""*   Warning: get_sph_interp(...):
+    if target not in ['rho', 'u', 'vx', 'vy', 'vz']:
+        warn(iverbose, 'get_sph_interp()', f"""*   Warning: get_sph_interp(...):
 Kernel interpolation should be used with conserved quantities (density, energy, momentum),
 but you are trying to do it with '{target}', which could lead to problematic results.""")      
 
@@ -281,7 +282,7 @@ but you are trying to do it with '{target}', which could lead to problematic res
 def get_temp_from_u(
     rho, u, mu, ieos:int,
     rho_unit=None, u_unit=None,
-    print_debug=False,
+    iverbose: int = 0,
 ) -> np.ndarray:
     """Calculate temperature from internal energy, assuming it being a mix of gas & radiation pressure (only if ieos!=2).
     
@@ -324,8 +325,8 @@ def get_temp_from_u(
     # Constants & inputs in cgs units
     
     if mu is None or (issubclass(type(mu), str) and mu == 'adapt'):
-        temp_ionized    = get_temp_from_u(rho, u, 0.6     , ieos, rho_unit=rho_unit, u_unit=u_unit, print_debug=print_debug,)
-        temp_recombined = get_temp_from_u(rho, u, 2.380981, ieos, rho_unit=rho_unit, u_unit=u_unit, print_debug=print_debug,)
+        temp_ionized    = get_temp_from_u(rho, u, 0.6     , ieos, rho_unit=rho_unit, u_unit=u_unit, iverbose=iverbose,)
+        temp_recombined = get_temp_from_u(rho, u, 2.380981, ieos, rho_unit=rho_unit, u_unit=u_unit, iverbose=iverbose,)
         temp = np.where(
             np.logical_and(temp_ionized > 10000., temp_recombined > 6000.),
             temp_ionized,
@@ -335,10 +336,10 @@ def get_temp_from_u(
                 np.nan
             )
         )
-        if print_debug: print(
-            f"get_temp_from_u():  Using average temp for {np.count_nonzero(np.isnan(temp))} out of {len(temp)} particles.\n",
-            f"                   {np.count_nonzero(np.logical_and(temp_ionized > 10000., temp_recombined < 6000.))}",
-            "out of which are contradicting each other (T > 10000K if mu=0.6, T < 6000K if mu=2.38)"
+        note(iverbose, "get_temp_from_u()",
+             f"Using average temp for {np.count_nonzero(np.isnan(temp))} out of {len(temp)} particles.\n" + \
+             f"                   {np.count_nonzero(np.logical_and(temp_ionized > 10000., temp_recombined < 6000.))}" + \
+             "out of which are contradicting each other (T > 10000K if mu=0.6, T < 6000K if mu=2.38)"
         )
         temp = np.where(np.isnan(temp), (temp_ionized + temp_recombined) / 2, temp)
         return temp
@@ -408,9 +409,8 @@ def get_temp_from_u(
             temp = temp + dt
 
         else:
-            warn(f"Warning: temperature not converging- max rtol = {np.max(abs(dt/temp))}")
-        if print_debug:
-            print(f"get_temp_from_u():  max rtol = {np.max(abs(dt/temp))} after {i} iters.")
+            warn(iverbose, 'get_temp_from_u()', f"temperature not converging- max rtol = {np.max(abs(dt/temp))}")
+        note(iverbose, 'get_temp_from_u()', f"max rtol = {np.max(abs(dt/temp))} after {i} iters.")
     else:
         raise TypeError(f"Unexpected dimension of input data rho & u:\n{rho=}\n{u=}")
     return temp
@@ -677,7 +677,7 @@ class MyPhantomDataFrames:
         elif len(self.job_name) > 0:
             pass
         else:
-            warn(f"*   Warning: Read failed- please supply job_name")
+            warn(iverbose, 'MyPhantomDataFrames.read()', f"Read failed- please supply job_name")
             return self
         self.job_index = job_index
         filename = self.get_filename()
@@ -759,9 +759,9 @@ class MyPhantomDataFrames:
                     if calc_params_params['kappa_translate_from_cgs_units']:
                         do_warn = False
             # warn
-            if do_warn and iverbose:
-                print(
-                    "***  Warning: kappa column exists.",
+            if do_warn:
+                warn(iverbose, 'MyPhantomDataFrames.read()',
+                    "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=}",
                     "However in phantom kappa is often (?) assumed to be in cgs unit.",
                     "\n    If so, please COVERT KAPPA MANNUALLY into PHANTOM UNITS by using code, such as:",
@@ -1005,7 +1005,7 @@ class MyPhantomDataFrames:
             total_mass = self.total_mass
         return np.sum([[(sdf[axis]*sdf['m']).sum() for axis in 'xyz'] for sdf in self.sdfs], axis=0) / total_mass
     
-    def get_orb_sep(self, unit=DEFAULT_UNITS['dist']) -> units.Quantity:
+    def get_orb_sep(self, unit=DEFAULT_UNITS['dist'], iverbose:int=3) -> units.Quantity:
         """
         Get orbital separation between the two sink particles.
         
@@ -1019,10 +1019,14 @@ class MyPhantomDataFrames:
         # sanity check
         if len(self.data['sink']) != 2:
             if len(self.data['sink']) <= 1:
-                warn(f"**  Error: In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
+                error(
+                    iverbose, 'MyPhantomDataFrames.get_orb_sep()',
+                    f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
                 return np.nan
             else:
-                warn(f"*   Warning: In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
+                warn(
+                    iverbose, 'MyPhantomDataFrames.get_orb_sep()',
+                    f"In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
         # calc
         sinks = self.data['sink']
         orb_sep = np.sum([(sinks[axis][0] - sinks[axis][1]) ** 2 for axis in 'xyz'])**0.5
