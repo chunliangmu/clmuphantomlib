@@ -19,8 +19,8 @@ def _is_verbose(iverbose: int|bool, iverbose_req: int|None) -> bool:
 
 
 def error(
-    iverbose: int|bool,
     orig: str,
+    iverbose: int|bool,
     msg : str,
     iverbose_req: int|None = None,
 ):
@@ -49,8 +49,8 @@ def error(
 
 
 def warn(
-    iverbose: int|bool,
     orig: str,
+    iverbose: int|bool,
     msg : str,
     iverbose_req: int|None = 2,
 ):
@@ -79,8 +79,8 @@ def warn(
 
 
 def note(
-    iverbose: int|bool,
     orig: str,
+    iverbose: int|bool,
     msg : str,
     iverbose_req: int|None = 3,
 ):
@@ -108,8 +108,8 @@ def note(
 
 
 def debug_info(
-    iverbose: int|bool,
     orig: str,
+    iverbose: int|bool,
     msg : str,
     iverbose_req: int|None = 4,
 ):
