@@ -6,6 +6,7 @@ A sub-module for light-related funcs.
 
 E.g. ray-tracing / radiative transfer / finding photosphere / lightcurves
 
+Owner: Chunliang Mu
 """
 
 
