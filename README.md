@@ -2,6 +2,8 @@ clmuphantomlib - a library for analyzing Phantom SPH data with Sarracen
 
 Author: Chunliang Mu
 
+Requrie python 3.10+ (since I am using the | operator for type hints)
+
 
 This library is written by me for my PhD project, see below:
 
