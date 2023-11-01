@@ -7,6 +7,8 @@
 """
 Old main library- I have plans to disassemble this into different files. 
 
+Owner: Chunliang Mu
+
 --------
 original description:
 --------
