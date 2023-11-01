@@ -14,8 +14,15 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import error, warn, note, debug_info
+from .settings import SETTINGS
 
 #  import (general)
+from os.path import sep
+
+
+# Set global variables
+MESA_DATA_DIR = SETTINGS['MESA_DATA_DIR']
+
 
 
 
