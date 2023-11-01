@@ -11,7 +11,10 @@ Owner: Chunliang Mu
 
 def _is_verbose(iverbose: int, iverbose_req: {int, None}) -> bool:
     """Test if we should be verbose."""
-    return (iverbose_req is None and iverbose) or iverbose >= iverbose_req
+    if iverbose_req is None or isinstance(iverbose, bool):
+        return iverbose
+    else:
+        return iverbose >= iverbose_req
 
 
 
