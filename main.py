@@ -336,7 +336,7 @@ def get_temp_from_u(
                 np.nan
             )
         )
-        note(iverbose, "get_temp_from_u()",
+        note("get_temp_from_u()", iverbose,
              f"Using average temp for {np.count_nonzero(np.isnan(temp))} out of {len(temp)} particles.\n" + \
              f"                   {np.count_nonzero(np.logical_and(temp_ionized > 10000., temp_recombined < 6000.))}" + \
              "out of which are contradicting each other (T > 10000K if mu=0.6, T < 6000K if mu=2.38)"
@@ -409,8 +409,8 @@ def get_temp_from_u(
             temp = temp + dt
 
         else:
-            warn(iverbose, 'get_temp_from_u()', f"temperature not converging- max rtol = {np.max(abs(dt/temp))}")
-        note(iverbose, 'get_temp_from_u()', f"max rtol = {np.max(abs(dt/temp))} after {i} iters.")
+            warn('get_temp_from_u()', iverbose, f"temperature not converging- max rtol = {np.max(abs(dt/temp))}")
+        note('get_temp_from_u()', iverbose, f"max rtol = {np.max(abs(dt/temp))} after {i} iters.")
     else:
         raise TypeError(f"Unexpected dimension of input data rho & u:\n{rho=}\n{u=}")
     return temp
@@ -677,15 +677,14 @@ class MyPhantomDataFrames:
         elif len(self.job_name) > 0:
             pass
         else:
-            warn(iverbose, 'MyPhantomDataFrames.read()', f"Read failed- please supply job_name")
+            warn('MyPhantomDataFrames.read()', iverbose, f"Read failed- please supply job_name")
             return self
         self.job_index = job_index
         filename = self.get_filename()
         if print_debug:
             # print_debug is deprecated.
             iverbose = 99
-        if iverbose >= 2:
-            print(f"\nReading {filename=}")
+        note('MyPhantomDataFrames.read()', iverbose, f"Reading {filename=}")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
@@ -716,21 +715,26 @@ class MyPhantomDataFrames:
             'temp': units.K,
         }
         self._update_units()
-        if iverbose >= 3:
+        if iverbose >= 4:
+            debug_info_text = "\n"
             for i in ['dist', 'mass', 'time']:
-                print(f"{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}")
-            print(f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }")
-            print(f"Center of mass location: {self.loc_CoM = }")
+                debug_info_text += f"\t{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}\n"
+            debug_info_text += f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }\n"
+            debug_info_text += f"Center of mass location: {self.loc_CoM = }\n"
+            debug_info('MyPhantomDataFrames.read()', iverbose, debug_info_text)
 
                     
         if reset_xyz_by_CoM:
             reset_xyz_by = "CoM"
         
         if not reset_xyz_by:
-            if iverbose and get_r_from_loc(self.loc_CoM) > 1:
-                print("*    Warning: CoM significantly deviates from the origin,",
-                      f"with distance of {get_r_from_loc(self.loc_CoM)}",
-                      "Consider use reset_xyz_by_CoM=True option when read.")
+            if get_r_from_loc(self.loc_CoM) > 1:
+                warn(
+                    'MyPhantomDataFrames.read()', iverbose,
+                    "*    Warning: CoM significantly deviates from the origin," + \
+                    f"with distance of {get_r_from_loc(self.loc_CoM)}" + \
+                    "Consider use reset_xyz_by_CoM=True option when read."
+                )
         else:
             # do reset xyz
             if reset_xyz_by == "CoM":
@@ -760,7 +764,7 @@ class MyPhantomDataFrames:
                         do_warn = False
             # warn
             if do_warn:
-                warn(iverbose, 'MyPhantomDataFrames.read()',
+                warn('MyPhantomDataFrames.read()', iverbose,
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=}",
                     "However in phantom kappa is often (?) assumed to be in cgs unit.",
@@ -1020,12 +1024,12 @@ class MyPhantomDataFrames:
         if len(self.data['sink']) != 2:
             if len(self.data['sink']) <= 1:
                 error(
-                    iverbose, 'MyPhantomDataFrames.get_orb_sep()',
+                    'MyPhantomDataFrames.get_orb_sep()', iverbose,
                     f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
                 return np.nan
             else:
                 warn(
-                    iverbose, 'MyPhantomDataFrames.get_orb_sep()',
+                    'MyPhantomDataFrames.get_orb_sep()', iverbose,
                     f"In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
         # calc
         sinks = self.data['sink']

@@ -54,7 +54,7 @@ class Settings:
             self.__data['MESA_DATA_DIR']= f"{self.__data['PHANTOM_DIR']}{os.path.sep}data{os.path.sep}eos{os.path.sep}mesa" 
         else:
             if self.__data['PHANTOM_DIR'] is not None:
-                warn(iverbose, "Settings.set_as_default()", f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}")
+                warn("Settings.set_as_default()", iverbose, f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}")
             self.__data['MESA_DATA_DIR'] = None
 
 

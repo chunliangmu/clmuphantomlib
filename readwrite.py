@@ -12,6 +12,11 @@ Owner: Chunliang Mu
 # Init
 
 
+#  import (my libs)
+from .log import error, warn, note, debug_info
+
+
+#  import (general)
 import json
 import numpy as np
 from datetime import datetime
@@ -26,7 +31,10 @@ CURRENT_VERSION = '0.1'
 # Functions
 
 
-# JSON-related read / write func
+# ---------------------------------- #
+# - JSON-related read / write func - #
+# ---------------------------------- #
+
 #  suitable for small human-readable files
 
 
@@ -113,13 +121,13 @@ def _json_encode(
         if '_type_' in obj.keys() and obj['_type_']:
             if overwrite_obj_kwds:
                 del obj['_type_']
-                if iverbose >= 2:
-                    print("*   Note: _json_encode(...):" + \
-                          "there are '_type_' keyword inside the input dict." + \
-                          "The data stored there will be removed to avoid issues.")
-            elif iverbose:
-                print("*   Warning: _json_encode(...):" + \
-                      "there are '_type_' keyword inside the input dict. These could cause issues when reading data.")
+                warn('_json_encode(...)', iverbose,
+                     "there are '_type_' keyword inside the input dict." + \
+                     "The data stored there will be removed to avoid issues.")
+            else:
+                warn('_json_encode(...)', iverbose,
+                     "*   Warning: _json_encode(...):" + \
+                     "there are '_type_' keyword inside the input dict. These could cause issues when reading data.")
         # recursively format whatever is inside the dict
         for key in obj.keys():
             obj[key] = _json_encode(
@@ -219,18 +227,16 @@ def _json_decode(
                 if '_data_' in obj.keys() and '_unit_' in obj.keys():
                     return units.Quantity(value=obj['_data_'], unit=obj['_unit_'], copy=(not overwrite_obj))
             else:
-                if iverbose:
-                    print("*   Warning: _json_decode(...):" + \
-                          f"Unrecognized obj['_type_']= {obj['_type_']}" + \
-                          "type convertion for this is cancelled."
-                         )
-                    
-            if iverbose:
-                print("*   Warning: _json_decode(...):" + \
-                      "Found '_type_' keyword, but read failed." + \
-                      "This could imply save file corruption." + \
-                      " obj['_type_'] data ignored."
+                warn('_json_decode()', iverbose,
+                     f"Unrecognized obj['_type_']= {obj['_type_']}" + \
+                     "type convertion for this is cancelled."
                      )
+                    
+            warn('_json_decode()', iverbose,
+                 "Found '_type_' keyword, but read failed." + \
+                 "This could imply save file corruption." + \
+                 " obj['_type_'] data ignored."
+                 )
         for key in obj.keys():
             obj[key] = _json_decode(
                 obj[key],
@@ -310,4 +316,10 @@ def json_load(
         How much warnings, notes, and debug info to be print on screen.
     """
     return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=True, iverbose=iverbose, )
+
+
+
+# ----------------------------- #
+# - Fortran-related read func - #
+# ----------------------------- #
 
