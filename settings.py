@@ -54,7 +54,7 @@ class Settings:
         return self.__data[i]
 
     
-    def __setitem__(self, i):
+    def __setitem__(self, i, val):
         raise NotImplementedError
 
     
