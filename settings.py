@@ -34,8 +34,8 @@ class Settings:
         """Init.
         """
         self.__data = {
-            'PHANTOM_DIR': None,
-            'EoS_MESA_DATA_DIR': None,
+            'PHANTOM_DIR': None,    # assuming normalized path ( use os.path.normpath() )
+            'EoS_MESA_DATA_DIR': None,    # assuming normalized path ( use os.path.normpath() )
             'EoS_MESA_table_Z_float': np.array([]),
             'EoS_MESA_table_Z_str': [],
             'EoS_MESA_table_X_float': np.array([]),
