@@ -25,6 +25,7 @@ import numpy as np
 
 
 class EoS_Base:
+    """Base Class for Equation of State Objects."""
     def __init__(self):
         pass
 
