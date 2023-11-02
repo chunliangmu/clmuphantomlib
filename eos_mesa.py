@@ -21,7 +21,8 @@ from .eos_base  import EoS_Base
 #  import (general)
 import os
 import numpy as np
-
+from astropy import units
+from scipy.interpolate import RegularGridInterpolator
 
 
 
@@ -37,15 +38,25 @@ class EoS_MESA_table:
         self.Z_str       = []
         self.X_arr       = np.array([])
         self.X_str       = []
-        self.logE_arr    = np.array([])
-        self.logV_arr    = np.array([])
+        self.log10_E_arr = np.array([])
+        self.log10_V_arr = np.array([])
+        self.grid        = ()
         self.table       = np.array([])
         self.table_dtype = []
-
+        self.interp_dict = {}
+        
         self.load_mesa_eos_table(settings, iverbose=iverbose)
         return
 
+    
+    def __getitem__(self, i):
+        return self.table[i]
 
+    
+    def __setitem__(self, i, val):
+        raise NotImplementedError(
+            "EoS_MESA_table: Please don't try to change things that are not supposed to be changed.")
+        
     
     def load_mesa_eos_table(self, settings:Settings, iverbose:int=3):
         """Load MESA table.
@@ -77,8 +88,8 @@ class EoS_MESA_table:
         self.X_arr       = settings['EoS_MESA_table_X_float']
         self.X_str       = settings['EoS_MESA_table_X_str']
         self.table_dtype = settings['EoS_MESA_table_dtype']
-        self.logE_arr    = None
-        self.logV_arr    = None
+        self.log10_E_arr = None
+        self.log10_V_arr = None
         self.table       = None
         no_Z = len(self.Z_arr)
         no_X = len(self.X_arr)
@@ -108,9 +119,9 @@ class EoS_MESA_table:
                     no_E, no_V, no_var2 = fortran_read_file_unformatted(f, 'i', 3)
                     
                     logV_float = np.array(fortran_read_file_unformatted(f, 'd', no_V))
-                    if self.logV_arr is None:
-                        self.logV_arr = logV_float
-                    elif not np.allclose(self.logV_arr, logV_float):
+                    if self.log10_V_arr is None:
+                        self.log10_V_arr = logV_float
+                    elif not np.allclose(self.log10_V_arr, logV_float):
                         warn(
                             '_load_mesa_eos_table()', iverbose,
                             "Warning: logV array not the same across the data files.",
@@ -118,9 +129,9 @@ class EoS_MESA_table:
                         )
     
                     logE_float = np.array(fortran_read_file_unformatted(f, 'd', no_E))
-                    if self.logE_arr is None:
-                        self.logE_arr = logE_float
-                    elif not np.allclose(self.logE_arr, logE_float):
+                    if self.log10_E_arr is None:
+                        self.log10_E_arr = logE_float
+                    elif not np.allclose(self.log10_E_arr, logE_float):
                         warn(
                             '_load_mesa_eos_table()', iverbose,
                             "Warning: logE array not the same across the data files.",
@@ -137,7 +148,68 @@ class EoS_MESA_table:
                             self.table[i_Z, i_X, i_E, i_V] = fortran_read_file_unformatted(f, 'd', no_var2)
 
         #raise NotImplementedError
+        self.grid = (self.Z_arr, self.X_arr, self.log10_E_arr, self.log10_V_arr)
+        self.interp_dict = {
+            val_type: RegularGridInterpolator(self.grid, self.table[val_type], method='linear') #cubic
+            for val_type in self.table.dtype.names
+        }
+            
         return self
+
+
+    def getvalue(
+        val_type: str|list,
+        rho: np.ndarray|units.Quantity,
+        u  : np.ndarray|units.Quantity,
+        X  : float,
+        Z  : float,
+        return_as_quantity: bool|None = None
+    ) -> np.ndarray|units.Quantity:
+        """Interpolate value and return.
+        
+        Parameters
+        ----------
+        val_type: str|list
+            type of value to be interpolated.
+            see the fields specified in self.table_dtype.
+            e.g. 'rho'
+
+        rho, u: np.ndarray|units.Quantity
+            density and specific internal energy
+            if numpy array, WILL ASSUME CGS UNITS.
+
+        X, Z : float
+            hydrogen mass fraction, metallicity, respectively.
+
+        return_as_quantity: bool|None
+            if the results should be returned as a astropy.units.Quantity.
+            If None, will only return as that if one of the input rho or u is that.
+
+
+        Note: As described by line 451 of the file phantom/src/main/eos_mesa_microphysics.f90,
+            ! logRho = logV + 0.7*logE - 20
+            Daniel's explanation of it is that
+            "It’s some combination of pressure and density that makes sense only to people who compile equations of state"
+            (2023-11-02 over Slack.)
+            
+        """
+
+        return_quantity = False
+        if isinstance(rho, units.Quantity):
+            rho = rho.cgs.value
+            return_quantity = True
+        if isinstance(u, units.Quantity):
+            u = u.cgs.value
+            return_quantity = True
+        if return_as_quantity is not None:
+            return_quantity = return_as_quantity
+
+        log10_E = np.log10(u)
+        log10_V = 20. + np.log10(rho) - 0.7 * log10_E
+
+        raise NotImplementedError
+        return RegularGridInterpolator() 
+    
 
 
 
