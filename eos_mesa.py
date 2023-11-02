@@ -14,16 +14,36 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import error, warn, note, debug_info
-from .settings  import DEFAULT_SETTINGS
+from .settings  import Settings, DEFAULT_SETTINGS
 from .readwrite import fortran_read_file_unformatted
 from .eos_base  import EoS_Base
 
 #  import (general)
-from os.path import sep
+import os
 
 
 # Set global variables
-mesa_data_dir = DEFAULT_SETTINGS['MESA_DATA_DIR']
+
+
+
+
+# Functions
+
+
+def _load_mesa_eos_table(settings:Settings):
+    """Load mesa table.
+
+    Assuming mesa EoS table stored in directory settings['MESA_DATA_DIR'].
+    """
+    # init
+    mesa_data_dir = settings['EoS_MESA_DATA_DIR']
+    if mesa_data_dir is None or not os.path.isdir(mesa_data_dir):
+        raise ValueError(f"settings['MESA_DATA_DIR']={mesa_data_dir} is not a valid directory.")
+    
+    mesa_table = None
+    
+    raise NotImplementedError
+    return mesa_table
 
 
 
@@ -31,10 +51,9 @@ mesa_data_dir = DEFAULT_SETTINGS['MESA_DATA_DIR']
 
 
 class EoS_MESA(EoS_Base):
-    def __init__(self):
-        pass
-
-
+    """Class for MESA Equation of State Objects."""
+    def __init__(self, settings:Settings=DEFAULT_SETTINGS):
+        self.__mesa_table = _load_mesa_eos_table(settings=settings)
 
 
 
