@@ -40,15 +40,23 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
         EoS_MESA_table_Z_str
         EoS_MESA_table_X_float
         EoS_MESA_table_X_str
+        EoS_MESA_table_dtype
+
+    Note: data stored in MESA EoS table (var2- last column):
+    (as stated in phantom source file comments: phantom/src/main/eos_mesa_microphysics.f90 line 435-438)
+    ! The columns in the data are:
+    ! 1. logRho        2. logP          3. logPgas       4. logT
+    ! 5. dlnP/dlnrho|e 6. dlnP/dlne|rho 7. dlnT/dlnrho|e 8. dlnT/dlne|rho
+    ! 9. logS         10. dlnT/dlnP|S  11. Gamma1       12. gamma
+    
 
     Returns
     -------
     (
-    mesa_table_Z_float : np.ndarray (1d),
-    mesa_table_X_float : np.ndarray (1d),
-    mesa_table_logE_float : np.ndarray (1d),
-    mesa_table_logV_float : np.ndarray (1d),
-    mesa_table_var2_float : np.ndarray (1d),
+    mesa_table_Z_float : np.ndarray (1d),    # Z
+    mesa_table_X_float : np.ndarray (1d),    # X
+    mesa_table_logE_float : np.ndarray (1d), # Eint
+    mesa_table_logV_float : np.ndarray (1d), # V
     ), mesa_table : np.ndarray (5d),
         
     """
@@ -58,9 +66,10 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
     mesa_table_Z_str   = settings['EoS_MESA_table_Z_str']
     mesa_table_X_float = settings['EoS_MESA_table_X_float']
     mesa_table_X_str   = settings['EoS_MESA_table_X_str']
+    mesa_table_dtype   = settings['EoS_MESA_table_dtype']
     mesa_table_logE_float = None
     mesa_table_logV_float = None
-    mesa_table_var2_float = None
+    mesa_table_var2_str = None
     mesa_table = None
     no_Z = len(mesa_table_Z_float)
     no_X = len(mesa_table_X_float)
@@ -85,10 +94,11 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
                     f"{X_float} is not the same as {X_str=}.",
                 )
             with open(f"{mesa_data_dir}{os.path.sep}output_DE_z{Z_str}x{X_str}.bindata", 'rb') as f:
-                
+
+                # load meta data
                 no_E, no_V, no_var2 = fortran_read_file_unformatted(f, 'i', 3)
                 
-                logV_float = fortran_read_file_unformatted(f, 'd', no_V)
+                logV_float = np.array(fortran_read_file_unformatted(f, 'd', no_V))
                 if mesa_table_logV_float is None:
                     mesa_table_logV_float = logV_float
                 elif not np.allclose(mesa_table_logV_float, logV_float):
@@ -98,7 +108,7 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
                         "This is not supposed to happen! Check the code and the data!",
                     )
 
-                logE_float = fortran_read_file_unformatted(f, 'd', no_E)
+                logE_float = np.array(fortran_read_file_unformatted(f, 'd', no_E))
                 if mesa_table_logE_float is None:
                     mesa_table_logE_float = logE_float
                 elif not np.allclose(mesa_table_logE_float, logE_float):
@@ -108,10 +118,11 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
                         "This is not supposed to happen! Check the code and the data!",
                     )
 
+                # init mesa_table as a structured array
                 if mesa_table is None:
-                    # init mesa_table
-                    mesa_table = np.full((no_Z, no_X, no_E, no_V, no_var2), np.nan, dtype=np.float64)
+                    mesa_table = np.full((no_Z, no_X, no_E, no_V), np.nan, dtype=mesa_table_dtype)
 
+                # fill mesa table
                 for i_V in range(no_V):
                     for i_E in range(no_E):
                         mesa_table[i_Z, i_X, i_E, i_V] = fortran_read_file_unformatted(f, 'd', no_var2)
@@ -127,7 +138,6 @@ def _load_mesa_eos_table(settings:Settings, iverbose:int=3):
         mesa_table_X_float,
         mesa_table_logE_float,
         mesa_table_logV_float,
-        mesa_table_var2_float,
         ), mesa_table
 
 

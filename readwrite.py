@@ -334,7 +334,7 @@ def fortran_read_file_unformatted(
     t: str,
     no: int|None = None,
     iverbose: int = 3,
-) -> np.ndarray:
+) -> tuple:
     """Read one record from an unformatted file saved by fortran.
 
     Because stupid fortran save two additional 4 byte int before and after each record respectively when saving unformatted data.
@@ -396,5 +396,5 @@ def fortran_read_file_unformatted(
              "This means something is seriously wrong.",
              "Please Check if data sturcture is correct and file is not corrupted.",
         )
-    return np.array(data)
+    return data
 

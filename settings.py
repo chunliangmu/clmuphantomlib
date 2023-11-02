@@ -40,6 +40,7 @@ class Settings:
             'EoS_MESA_table_Z_str': [],
             'EoS_MESA_table_X_float': np.array([]),
             'EoS_MESA_table_X_str': [],
+            'EoS_MESA_table_dtype': [],
             
         }
 
@@ -72,6 +73,20 @@ class Settings:
             
         self.__data['EoS_MESA_table_Z_float'] = np.array([0.00, 0.02, 0.04])
         self.__data['EoS_MESA_table_X_float'] = np.array([0.00, 0.20, 0.40, 0.60, 0.80])
+        self.__data['EoS_MESA_table_dtype'] = [
+            ('log10_rho'    , np.float64), #  1
+            ('log10_P'      , np.float64), #  2
+            ('log10_Pgas'   , np.float64), #  3
+            ('log10_T'      , np.float64), #  4
+            ('dlnP/dlnrho|e', np.float64), #  5
+            ('dlnP/dlne|rho', np.float64), #  6
+            ('dlnT/dlnrho|e', np.float64), #  7
+            ('dlnT/dlne|rho', np.float64), #  8
+            ('log10_S'      , np.float64), #  9
+            ('dlnT/dlnP|S'  , np.float64), # 10
+            ('Gamma1'       , np.float64), # 11
+            ('gamma'        , np.float64), # 12
+        ]
         self.normalize(force=True)
 
     
