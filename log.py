@@ -21,7 +21,7 @@ def _is_verbose(iverbose: int|bool, iverbose_req: int|None) -> bool:
 def error(
     orig: str,
     iverbose: int|bool,
-    msg : str,
+    *msgs: str,
     iverbose_req: int|None = None,
 ):
     """Show an error message.
@@ -34,15 +34,16 @@ def error(
     orig: str
         Origins of this message (typically function name).
 
-    msg : str
-        The message to put up.
+    msgs: str
+        The messages to put up.
 
     iverbose_req: int
         Required minimum iverbose to do anything.
         If None, will treat iverbose as a bool and print even if iverbose < 0 !
     """
     if _is_verbose(iverbose, iverbose_req):
-        print(f"*** Error  :    {orig}:\n\t{msg}")
+        msgs_txt = '\n\t'.join(msgs)
+        print(f"*** Error  :    {orig}:\n\t{msgs_txt}")
     return
 
 
@@ -51,7 +52,7 @@ def error(
 def warn(
     orig: str,
     iverbose: int|bool,
-    msg : str,
+    *msgs: str,
     iverbose_req: int|None = 2,
 ):
     """Show a warning message.
@@ -64,15 +65,16 @@ def warn(
     orig: str
         Origins of this message (typically function name).
 
-    msg : str
-        The message to put up.
+    msgs: str
+        The messages to put up.
 
     iverbose_min_for_showing: int
         Required minimum iverbose to do anything.
         If None, will treat iverbose as a bool and print even if iverbose < 0 !
     """
     if _is_verbose(iverbose, iverbose_req):
-        print(f"**  Warning:    {orig}:\n\t{msg}")
+        msgs_txt = '\n\t'.join(msgs)
+        print(f"**  Warning:    {orig}:\n\t{msgs_txt}")
     return
 
 
@@ -81,7 +83,7 @@ def warn(
 def note(
     orig: str,
     iverbose: int|bool,
-    msg : str,
+    *msgs: str,
     iverbose_req: int|None = 3,
 ):
     """Show a note message.
@@ -94,14 +96,15 @@ def note(
     orig: str
         Origins of this message (typically function name).
 
-    msg : str
-        The message to put up.
+    msgs: str
+        The messages to put up.
 
     iverbose_min_for_showing: int
         Required minimum iverbose to do anything.
     """
     if _is_verbose(iverbose, iverbose_req):
-        print(f"*   Note   :    {orig}:\n\t{msg}")
+        msgs_txt = '\n\t'.join(msgs)
+        print(f"*   Note   :    {orig}:\n\t{msgs_txt}")
     return
 
 
@@ -110,7 +113,7 @@ def note(
 def debug_info(
     orig: str,
     iverbose: int|bool,
-    msg : str,
+    *msgs: str,
     iverbose_req: int|None = 4,
 ):
     """Show a debug info message.
@@ -123,12 +126,13 @@ def debug_info(
     orig: str
         Origins of this message (typically function name).
 
-    msg : str
-        The message to put up.
+    msgs: str
+        The messages to put up.
 
     iverbose_min_for_showing: int
         Required minimum iverbose to do anything.
     """
     if _is_verbose(iverbose, iverbose_req):
-        print(f"Debug Info :    {orig}:\n\t{msg}")
+        msgs_txt = '\n\t'.join(msgs)
+        print(f"Debug Info :    {orig}:\n\t{msgs_txt}")
     return
