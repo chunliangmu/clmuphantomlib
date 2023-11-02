@@ -28,15 +28,18 @@ class Settings:
     Using a class and private vars to make sure I don't stupidly overwrite it.
     will set __getitem__() but not __setitem__()
     """
-    def __init__(self, as_default:bool=True, iverbose:int=3):
-        """"""
+    def __init__(self, set_as:dict|str="default", iverbose:int=3):
+        """Init.
+        """
         self.__data = {
             'PHANTOM_DIR': None,
             'MESA_DATA_DIR': None,
         }
 
-        if as_default:
+        if set_as == "default":
             self.set_as_default(iverbose=iverbose)
+        elif isinstance(set_as, dict):
+            raise NotImplementedError
 
     def __getitem__(self, i):
         return self.__data[i]
@@ -59,4 +62,4 @@ class Settings:
 
 
 
-SETTINGS = Settings()
+DEFAULT_SETTINGS = Settings(set_as="default")

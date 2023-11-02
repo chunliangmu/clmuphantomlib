@@ -14,14 +14,25 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import error, warn, note, debug_info
-from .settings import SETTINGS
+from .settings  import DEFAULT_SETTINGS
+from .readwrite import fortran_read_file_unformatted
+from .eos_base  import EoS_Base
 
 #  import (general)
 from os.path import sep
 
 
 # Set global variables
-MESA_DATA_DIR = SETTINGS['MESA_DATA_DIR']
+mesa_data_dir = DEFAULT_SETTINGS['MESA_DATA_DIR']
+
+
+
+# Classes
+
+
+class EoS_MESA(EoS_Base):
+    def __init__(self):
+        pass
 
 
 
