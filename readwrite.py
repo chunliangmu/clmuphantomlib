@@ -21,7 +21,8 @@ import json
 import numpy as np
 from datetime import datetime
 from astropy import units
-
+import struct
+import io
 
 
 CURRENT_VERSION = '0.1'
@@ -40,11 +41,11 @@ CURRENT_VERSION = '0.1'
 
 def _json_encode(
     obj : dict,
-    metadata            : dict = {},
-    overwrite_obj       : bool = False,
-    overwrite_obj_kwds  : bool = False,
-    ignore_unknown_types: bool = False,
-    iverbose            : int  = 1,
+    metadata            : dict|None = {},
+    overwrite_obj       : bool      = False,
+    overwrite_obj_kwds  : bool      = False,
+    ignore_unknown_types: bool      = False,
+    iverbose            : int       = 1,
 ) -> dict:
     """Encode the obj to add meta data and do type convertion.
 
@@ -83,7 +84,7 @@ def _json_encode(
             instead of raising a NotImplementedError.
         
     iverbose: int
-        How much warnings, notes, and debug info to be print on screen. 
+        How much erros, warnings, notes, and debug info to be print on screen. 
         
     Returns
     -------
@@ -190,7 +191,7 @@ def _json_decode(
         Remove meta data from loaded dict (top level only).
         
     iverbose: int
-        How much warnings, notes, and debug info to be print on screen. 
+        How much erros, warnings, notes, and debug info to be print on screen. 
         
     Returns
     -------
@@ -250,12 +251,13 @@ def _json_decode(
 
 
 def json_dump(
-    obj: dict, fp,
-    metadata: dict = {},
+    obj: dict,
+    fp: io.BufferedReader,
+    metadata: dict|None = {},
     overwrite_obj = False,
     overwrite_obj_kwds = False,
     ignore_unknown_types: bool = False,
-    indent=4,
+    indent: int|None = 4,
     iverbose: int = 1,
 ):
     """Dump obj to file-like fp as a json file in my custom format with support of numpy arrays etc.
@@ -268,10 +270,10 @@ def json_dump(
     obj: dict
         data to be serialized.
 
-    fp:
-        File object you get with open().
+    fp: io.BufferedReader:
+        File object you get with open(), with write permission.
         
-    metadata: dict or None
+    metadata: dict | None
         meta data to be added to file. The code will also save some of its own metadata.
         set it to None to disable this feature.
         
@@ -287,11 +289,11 @@ def json_dump(
             replace the data with a message ("-NotImplemented-")
             instead of raising a NotImplementedError.
         
-    indent: int
+    indent: int | None
         indentation in the saved json files.
         
     iverbose: int
-        How much warnings, notes, and debug info to be print on screen.
+        How much erros, warnings, notes, and debug info to be print on screen.
     """
     obj = _json_encode(
         obj, metadata=metadata,
@@ -302,18 +304,22 @@ def json_dump(
 
 
 def json_load(
-    fp,
+    fp: io.BufferedReader,
     remove_metadata: bool = True,
     iverbose: int = 1,
 ):
     """Read obj from a json file (saved by json_dump(...) in this submodule).
 
+    Parameters
+    ----------
+    fp: io.BufferedReader:
+        File object you get with open(), with read permission.
         
     remove_metadata: bool
         remove meta data from loaded dict.
         
     iverbose: int
-        How much warnings, notes, and debug info to be print on screen.
+        How much erros, warnings, notes, and debug info to be print on screen.
     """
     return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=True, iverbose=iverbose, )
 
@@ -322,4 +328,73 @@ def json_load(
 # ----------------------------- #
 # - Fortran-related read func - #
 # ----------------------------- #
+
+def fortran_read_file_unformatted(
+    fp: io.BufferedReader,
+    t: str,
+    no: int|None = None,
+    iverbose: int = 3,
+) -> np.ndarray:
+    """Read one record from an unformatted file saved by fortran.
+
+    Because stupid fortran save two additional 4 byte int before and after each record respectively when saving unformatted data.
+    (Fortran fans please don't hit me)
+
+    Parameters
+    ----------
+    fp: io.BufferedReader:
+        File object you get with open(), with read permission.
+
+    t: str
+        Type of the data. Acceptable input:
+            'i' | 'int'    | 'integer(4)': 4-byte integer
+            'f' | 'float'  | 'real(4)'   : 4-byte float
+            'd' | 'double' | 'real(8)'   : 8-byte float
+    no: int|None
+        Number of data in this record. if None, will infer from record.
+        
+    iverbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+    """
+
+    if t in ['i', 'int', 'integer(4)']:
+        t_format = 'i'
+        t_no_bytes = 4
+    elif t in ['f', 'float', 'real(4)']:
+        t_format = 'f'
+        t_no_bytes = 4
+    elif t in ['d', 'double', 'real(8)']:
+        t_format = 'd'
+        t_no_bytes = 8
+    else:
+        error(
+            'fortran_read_file_unformatted()', iverbose,
+            f"Unrecognized data type t={t}."
+            )
+        raise NotImplementedError
+    
+    rec_no_bytes = struct.unpack('i', fp.read(4))[0]
+    no_in_record = int(rec_no_bytes / t_no_bytes)
+    if no is None:
+        no = no_in_record
+        rec_no_bytes_used = rec_no_bytes
+    else:
+        rec_no_bytes_used = no * t_no_bytes
+        if no != no_in_record:
+            warn('fortran_read_file_unformatted()', iverbose,
+                 f"Supplied no={no} does not match the record no_in_record={no_in_record}.",
+                 "Incorrect type perhaps?",
+                 "will continue to use supplied no regardless."
+            )
+
+    data = struct.unpack(f'{no}{t_format}', fp.read(rec_no_bytes_used))
+    rec_no_bytes_again = struct.unpack('i', fp.read(4))[0]
+    if rec_no_bytes != rec_no_bytes_again:
+        warn('fortran_read_file_unformatted()', iverbose,
+             "The no of bytes recorded in the beginning and the end of the record did not match!",
+             f"Beginning is {rec_no_bytes}, while end is {rec_no_bytes_again}.",
+             "This means something is seriously wrong.",
+             "Please Check if data sturcture is correct and file is not corrupted.",
+        )
+    return np.array(data)
 
