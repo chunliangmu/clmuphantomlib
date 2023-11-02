@@ -48,6 +48,7 @@ class Settings:
             self.set_as_default(iverbose=iverbose)
         elif isinstance(set_as, dict):
             raise NotImplementedError
+        return
     
     def __getitem__(self, i):
         return self.__data[i]
