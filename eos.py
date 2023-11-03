@@ -15,7 +15,8 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from .log import error, warn, note, debug_info
+#from .log import error, warn, note, debug_info
+from .eos_mesa import EoS_MESA
 
 #  import (general)
 

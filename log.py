@@ -28,11 +28,13 @@ def error(
 
     Parameters
     ----------
-    iverbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        
     orig: str
         Origins of this message (typically function name).
+
+    iverbose: int
+        How much errors, warnings, notes, and debug info to be print on screen.
+        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
+            to output to log files.
 
     msgs: str
         The messages to put up.
@@ -59,11 +61,13 @@ def warn(
 
     Parameters
     ----------
-    iverbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        
     orig: str
         Origins of this message (typically function name).
+
+    iverbose: int
+        How much errors, warnings, notes, and debug info to be print on screen.
+        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
+            to output to log files.
 
     msgs: str
         The messages to put up.
@@ -90,11 +94,13 @@ def note(
 
     Parameters
     ----------
-    iverbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        
     orig: str
         Origins of this message (typically function name).
+
+    iverbose: int
+        How much errors, warnings, notes, and debug info to be print on screen.
+        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
+            to output to log files.
 
     msgs: str
         The messages to put up.
@@ -120,12 +126,14 @@ def debug_info(
 
     Parameters
     ----------
-    iverbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        
     orig: str
         Origins of this message (typically function name).
 
+    iverbose: int
+        How much errors, warnings, notes, and debug info to be print on screen.
+        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
+            to output to log files.
+        
     msgs: str
         The messages to put up.
 

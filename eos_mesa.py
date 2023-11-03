@@ -32,25 +32,29 @@ from scipy.interpolate import RegularGridInterpolator
 
 class EoS_MESA_table:
     """A class to store and handle stored MESA tables."""
-    def __init__(self, settings:Settings, iverbose:int=3):
-        self.data_dir    = ""
-        self.Z_arr       = np.array([])
-        self.Z_str       = []
-        self.X_arr       = np.array([])
-        self.X_str       = []
-        self.log10_E_arr = np.array([])
-        self.log10_V_arr = np.array([])
-        self.grid        = ()
-        self.table       = np.array([])
-        self.table_dtype = []
-        self.interp_dict = {}
+    def __init__(self, params: dict, settings: Settings, iverbose: int=3):
+        self._data_dir    = ""
+        self._Z           = np.nan
+        self._Z_arr       = np.array([])
+        self._Z_str       = []
+        self._X           = np.nan
+        self._X_arr       = np.array([])
+        self._X_str       = []
+        self._log10_E_arr = np.array([])
+        self._log10_V_arr = np.array([])
+        self._grid_withZX = ()
+        self._table_withZX= np.array([])
+        self._grid_noZX   = ()
+        self._table_noZX  = np.array([])
+        self._table_dtype = []
+        self._interp_dict = {}
         
-        self.load_mesa_eos_table(settings, iverbose=iverbose)
+        self.load_mesa_eos_table(params, settings, iverbose=iverbose)
         return
 
     
     def __getitem__(self, i):
-        return self.table[i]
+        return self._table_withZX[i]
 
     
     def __setitem__(self, i, val):
@@ -58,7 +62,7 @@ class EoS_MESA_table:
             "EoS_MESA_table: Please don't try to change things that are not supposed to be changed.")
         
     
-    def load_mesa_eos_table(self, settings:Settings, iverbose:int=3):
+    def load_mesa_eos_table(self, params: dict, settings: Settings, iverbose: int=3):
         """Load MESA table.
     
         Assuming mesa EoS table stored in directory settings['EoS_MESA_DATA_DIR'].
@@ -69,6 +73,12 @@ class EoS_MESA_table:
             EoS_MESA_table_X_float
             EoS_MESA_table_X_str
             EoS_MESA_table_dtype
+
+        Required Keywords in params:
+            X: Hydrogen mass fraction
+            Z: Metallicity
+        (Because Phantom assumes a constant pre-determined X and Z when loading MESA EoS-
+         it does linear interpolation on that.)
     
         Note: data stored in MESA EoS table (var2- last column):
         (as stated in phantom source file comments: phantom/src/main/eos_mesa_microphysics.f90 line 435-438)
@@ -82,46 +92,48 @@ class EoS_MESA_table:
             
         """
         # init
-        self.data_dir    = settings['EoS_MESA_DATA_DIR']
-        self.Z_arr       = settings['EoS_MESA_table_Z_float']
-        self.Z_str       = settings['EoS_MESA_table_Z_str']
-        self.X_arr       = settings['EoS_MESA_table_X_float']
-        self.X_str       = settings['EoS_MESA_table_X_str']
-        self.table_dtype = settings['EoS_MESA_table_dtype']
-        self.log10_E_arr = None
-        self.log10_V_arr = None
-        self.table       = None
-        no_Z = len(self.Z_arr)
-        no_X = len(self.X_arr)
+        self._data_dir    = settings['EoS_MESA_DATA_DIR']
+        self._Z_arr       = settings['EoS_MESA_table_Z_float']
+        self._Z_str       = settings['EoS_MESA_table_Z_str']
+        self._X_arr       = settings['EoS_MESA_table_X_float']
+        self._X_str       = settings['EoS_MESA_table_X_str']
+        self._table_dtype = settings['EoS_MESA_table_dtype']
+        self._Z           = params['Z']
+        self._X           = params['X']
+        self._log10_E_arr = None
+        self._log10_V_arr = None
+        self._table_withZX= None
+        no_Z = len(self._Z_arr)
+        no_X = len(self._X_arr)
         
-        if self.data_dir is None or not os.path.isdir(self.data_dir):
-            raise ValueError(f"settings['MESA_DATA_DIR']={self.data_dir} is not a valid directory.")
+        if self._data_dir is None or not os.path.isdir(self._data_dir):
+            raise ValueError(f"settings['MESA_DATA_DIR']={self._data_dir} is not a valid directory.")
     
     
         
-        for i_Z, Z_float, Z_str in zip(range(no_Z), self.Z_arr, self.Z_str):
+        for i_Z, Z_float, Z_str in zip(range(no_Z), self._Z_arr, self._Z_str):
             # sanity check
             if f'{Z_float:.2f}' != Z_str:
                 warn(
                     '_load_mesa_eos_table()', iverbose,
                     f"{Z_float=} is not the same as {Z_str=}.",
                 )
-            for i_X, X_float, X_str in zip(range(no_X), self.X_arr, self.X_str):
+            for i_X, X_float, X_str in zip(range(no_X), self._X_arr, self._X_str):
                 # sanity check
                 if f'{X_float:.2f}' != X_str:
                     warn(
                         '_load_mesa_eos_table()', iverbose,
                         f"{X_float} is not the same as {X_str=}.",
                     )
-                with open(f"{self.data_dir}{os.path.sep}output_DE_z{Z_str}x{X_str}.bindata", 'rb') as f:
+                with open(f"{self._data_dir}{os.path.sep}output_DE_z{Z_str}x{X_str}.bindata", 'rb') as f:
     
                     # load meta data
                     no_E, no_V, no_var2 = fortran_read_file_unformatted(f, 'i', 3)
                     
                     logV_float = np.array(fortran_read_file_unformatted(f, 'd', no_V))
-                    if self.log10_V_arr is None:
-                        self.log10_V_arr = logV_float
-                    elif not np.allclose(self.log10_V_arr, logV_float):
+                    if self._log10_V_arr is None:
+                        self._log10_V_arr = logV_float
+                    elif not np.allclose(self._log10_V_arr, logV_float):
                         warn(
                             '_load_mesa_eos_table()', iverbose,
                             "Warning: logV array not the same across the data files.",
@@ -129,9 +141,9 @@ class EoS_MESA_table:
                         )
     
                     logE_float = np.array(fortran_read_file_unformatted(f, 'd', no_E))
-                    if self.log10_E_arr is None:
-                        self.log10_E_arr = logE_float
-                    elif not np.allclose(self.log10_E_arr, logE_float):
+                    if self._log10_E_arr is None:
+                        self._log10_E_arr = logE_float
+                    elif not np.allclose(self._log10_E_arr, logE_float):
                         warn(
                             '_load_mesa_eos_table()', iverbose,
                             "Warning: logE array not the same across the data files.",
@@ -139,39 +151,52 @@ class EoS_MESA_table:
                         )
     
                     # init mesa_table as a structured array
-                    if self.table is None:
-                        self.table = np.full((no_Z, no_X, no_E, no_V), np.nan, dtype=self.table_dtype)
+                    if self._table_withZX is None:
+                        self._table_withZX = np.full((no_Z, no_X, no_E, no_V), np.nan, dtype=self._table_dtype)
     
                     # fill mesa table
                     for i_V in range(no_V):
                         for i_E in range(no_E):
-                            self.table[i_Z, i_X, i_E, i_V] = fortran_read_file_unformatted(f, 'd', no_var2)
+                            self._table_withZX[i_Z, i_X, i_E, i_V] = fortran_read_file_unformatted(f, 'd', no_var2)
 
         #raise NotImplementedError
-        self.grid = (self.Z_arr, self.X_arr, self.log10_E_arr, self.log10_V_arr)
-        self.interp_dict = {
-            val_type: RegularGridInterpolator(self.grid, self.table[val_type], method='linear') #cubic
-            for val_type in self.table.dtype.names
+        self._grid_withZX = (self._Z_arr, self._X_arr, self._log10_E_arr, self._log10_V_arr)
+        self._grid_noZX   = (self._log10_E_arr, self._log10_V_arr)
+        meshgrid_noZX = np.meshgrid(*self._grid_noZX, indexing='ij')
+        meshgrid_noZX_coord = np.stack((
+            np.full(meshgrid_noZX[0].shape, self._Z),
+            np.full(meshgrid_noZX[0].shape, self._X),
+            *meshgrid_noZX),
+            axis=-1)
+        self._table_noZX = np.full((no_E, no_V), np.nan, dtype=self._table_dtype)
+        for val_name in self._table_withZX.dtype.names:
+            self._table_noZX[val_name] = RegularGridInterpolator(
+                self._grid_withZX, self._table_withZX[val_name], method='linear')(
+                meshgrid_noZX_coord
+                )
+        
+        self._interp_dict = {
+            val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='cubic') #cubic
+            for val_name in self._table_noZX.dtype.names
         }
             
         return self
 
 
-    def getvalue(
-        val_type: str|list,
+    def get_val(
+        self,
+        val_name: str|list,
         rho: np.ndarray|units.Quantity,
         u  : np.ndarray|units.Quantity,
-        X  : float,
-        Z  : float,
         return_as_quantity: bool|None = None
     ) -> np.ndarray|units.Quantity:
         """Interpolate value and return.
         
         Parameters
         ----------
-        val_type: str|list
-            type of value to be interpolated.
-            see the fields specified in self.table_dtype.
+        val_name: str|list
+            name of value to be interpolated.
+            see the fields specified in self._table_dtype.
             e.g. 'rho'
 
         rho, u: np.ndarray|units.Quantity
@@ -206,9 +231,14 @@ class EoS_MESA_table:
 
         log10_E = np.log10(u)
         log10_V = 20. + np.log10(rho) - 0.7 * log10_E
+        _interp_coord = (log10_E, log10_V)
 
-        raise NotImplementedError
-        return RegularGridInterpolator() 
+        ans = self._interp_dict[val_name](_interp_coord)
+
+        return ans
+
+        #raise NotImplementedError
+        #return RegularGridInterpolator() 
     
 
 
@@ -217,8 +247,8 @@ class EoS_MESA_table:
 
 class EoS_MESA(EoS_Base):
     """Class for MESA Equation of State Objects."""
-    def __init__(self, settings:Settings=DEFAULT_SETTINGS, iverbose:int=3):
-        self.__mesa_table = _load_mesa_eos_table(settings=settings)
+    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
+        self.__mesa_table = EoS_MESA_table(params, settings, iverbose)
 
         return
 
