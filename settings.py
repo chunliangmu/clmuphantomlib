@@ -40,7 +40,7 @@ class Settings:
             'EoS_MESA_table_Z_str': [],
             'EoS_MESA_table_X_float': np.array([]),
             'EoS_MESA_table_X_str': [],
-            'EoS_MESA_table_dtype': [],
+            'EoS_MESA_table_dtype': [],    # do not change this unless you really know what you are doing.
             
         }
 
@@ -69,7 +69,10 @@ class Settings:
             self.__data['EoS_MESA_DATA_DIR']= f"{self.__data['PHANTOM_DIR']}{sep}data{sep}eos{sep}mesa" 
         else:
             if self.__data['PHANTOM_DIR'] is not None:
-                warn("Settings.set_as_default()", iverbose, f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}")
+                warn(
+                    "Settings.set_as_default()", iverbose,
+                    f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}"
+                )
             self.__data['EoS_MESA_DATA_DIR'] = None
             
         self.__data['EoS_MESA_table_Z_float'] = np.array([0.00, 0.02, 0.04])
