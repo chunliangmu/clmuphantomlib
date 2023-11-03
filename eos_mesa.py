@@ -188,27 +188,33 @@ class EoS_MESA_table:
         val_name: str|list,
         rho: np.ndarray|units.Quantity,
         u  : np.ndarray|units.Quantity,
-        return_as_quantity: bool|None = None
+        return_as_quantity: bool|None = None,
+        method  : str|None = None,
     ) -> np.ndarray|units.Quantity:
         """Interpolate value and return.
         
         Parameters
         ----------
-        val_name: str|list
+        val_name: str | list
             name of value to be interpolated.
             see the fields specified in self._table_dtype.
             e.g. 'rho'
 
-        rho, u: np.ndarray|units.Quantity
+        rho, u: np.ndarray | units.Quantity
             density and specific internal energy
             if numpy array, WILL ASSUME CGS UNITS.
+            should have same units.
 
         X, Z : float
             hydrogen mass fraction, metallicity, respectively.
 
-        return_as_quantity: bool|None
+        return_as_quantity: bool | None
             if the results should be returned as a astropy.units.Quantity.
             If None, will only return as that if one of the input rho or u is that.
+
+        method: str | None
+            Method to be used for interpolation.
+            See scipy.interpolate.RegularGridInterpolator.__call__ docs.
 
 
         Note: As described by line 451 of the file phantom/src/main/eos_mesa_microphysics.f90,
@@ -233,7 +239,7 @@ class EoS_MESA_table:
         log10_V = 20. + np.log10(rho) - 0.7 * log10_E
         _interp_coord = (log10_E, log10_V)
 
-        ans = self._interp_dict[val_name](_interp_coord)
+        ans = self._interp_dict[val_name](_interp_coord, method=method)
 
         return ans
 
