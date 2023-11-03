@@ -30,6 +30,7 @@ Assuming temperature unit being K. Reads & handles other units from phantom data
 # my libs
 from .log import error, warn, note, debug_info
 from .geometry import *
+from .units import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature
 
 
 
@@ -75,22 +76,6 @@ CONST_RADCONST = (4*const.sigma_sb/const.c).cgs
 CONST_KB_ON_MH = (const.k_B / CONST_M_H).cgs
 
 
-# In[5]:
-
-
-# default units (not really used much, just for fun)
-
-DEFAULT_UNITS = {
-    'dist': units.R_sun,
-    'mass': units.M_sun,
-    'temp': units.K,
-}
-# define the unit of time such that G is 1 in the new unit system
-DEFAULT_UNITS['time'] = units.def_unit(
-    "unit_time",
-    ( ( DEFAULT_UNITS['dist']**3 / (DEFAULT_UNITS['mass'] * const.G) )**0.5 ).to(units.s),
-)
-
 
 # # Functions
 
@@ -117,20 +102,7 @@ def eos_adiabatic(gamma, rho, u):
 # In[8]:
 
 
-# astropy.quantity related
 
-def set_as_quantity(var, unit, equivalencies=[], copy=True):
-    """Convert the var to an astropy quantity with given unit."""
-    if issubclass(type(var), units.quantity.Quantity):
-        var = var.to(unit, equivalencies=equivalencies, copy=copy)
-    else:
-        var = units.Quantity(var, unit=unit)
-    return var
-
-
-def set_as_quantity_temperature(var, unit=units.Kelvin, copy=True):
-    """Convert the var to an astropy quantity with given unit."""
-    return set_as_quantity(var, unit=unit, equivalencies=units.equivalencies.temperature(), copy=copy)
 
 
 # In[9]:

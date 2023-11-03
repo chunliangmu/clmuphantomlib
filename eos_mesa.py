@@ -17,6 +17,7 @@ from .log import error, warn, note, debug_info
 from .settings  import Settings, DEFAULT_SETTINGS
 from .readwrite import fortran_read_file_unformatted
 from .eos_base  import EoS_Base
+from .units import set_as_quantity, CGS_UNITS
 
 #  import (general)
 import os
@@ -176,7 +177,7 @@ class EoS_MESA_table:
                 )
         
         self._interp_dict = {
-            val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='cubic') #cubic
+            val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='linear')
             for val_name in self._table_noZX.dtype.names
         }
             
@@ -239,12 +240,30 @@ class EoS_MESA_table:
         log10_V = 20. + np.log10(rho) - 0.7 * log10_E
         _interp_coord = (log10_E, log10_V)
 
-        ans = self._interp_dict[val_name](_interp_coord, method=method)
+        # interpret val_name
+        if val_name in ['rho', 'P', 'Pgas', 'T']:
+            # data in table stored as log10
+            val_type = 'log10_' + val_name
+        else:
+            val_type = val_name
+            
+
+        ans = self._interp_dict[val_type](_interp_coord, method=method)
+
+        if val_name in ['rho', 'P', 'Pgas', 'T']:
+            ans = 10**ans
+
+        if return_quantity:
+            if val_name == 'rho':
+                val_units_text = 'density'
+            elif val_name == 'T':
+                val_units_text = 'temp'
+            else:
+                raise NotImplementedError
+            ans = set_as_quantity(ans, CGS_UNITS['density'])
+            
 
         return ans
-
-        #raise NotImplementedError
-        #return RegularGridInterpolator() 
     
 
 
