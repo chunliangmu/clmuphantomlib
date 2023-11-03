@@ -15,6 +15,7 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import error, warn, note, debug_info
+from .settings import Settings, DEFAULT_SETTINGS
 
 #  import (general)
 import numpy as np
@@ -26,10 +27,11 @@ import numpy as np
 
 class EoS_Base:
     """Base Class for Equation of State Objects."""
-    def __init__(self):
-        pass
+    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
+        note('EoS_Base', iverbose, "Loading EoS_Base.")
+        return
 
-    def get_temp_from_rho_u(self, rho: np.ndarray, u: np.ndarray):
+    def get_temp(self, rho: np.ndarray, u: np.ndarray):
         raise NotImplementedError
 
 
