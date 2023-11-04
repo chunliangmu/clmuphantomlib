@@ -184,14 +184,16 @@ class EoS_MESA_table:
         return self
 
 
-    def get_val(
+    def get_val_cgs(
         self,
         val_name: str|list,
-        rho: np.ndarray|units.Quantity,
-        u  : np.ndarray|units.Quantity,
-        return_as_quantity: bool|None = None,
+        rho: np.ndarray,
+        u  : np.ndarray,
+        *params_list,
         method  : str|None = None,
-    ) -> np.ndarray|units.Quantity:
+        iverbose: int = 3,
+        **params_dict,
+    ) -> np.ndarray:
         """Interpolate value and return.
         
         Parameters
@@ -201,22 +203,17 @@ class EoS_MESA_table:
             see the fields specified in self._table_dtype.
             e.g. 'rho'
 
-        rho, u: np.ndarray | units.Quantity
-            density and specific internal energy
-            if numpy array, WILL ASSUME CGS UNITS.
-            should have same units.
-
-        X, Z : float
-            hydrogen mass fraction, metallicity, respectively.
-
-        return_as_quantity: bool | None
-            if the results should be returned as a astropy.units.Quantity.
-            If None, will only return as that if one of the input rho or u is that.
+        rho, u: np.ndarray
+            density and specific internal energy in cgs units.
 
         method: str | None
             Method to be used for interpolation.
             See scipy.interpolate.RegularGridInterpolator.__call__ docs.
 
+        iverbose: int
+            How much errors, warnings, notes, and debug info to be print on screen.
+
+            
 
         Note: As described by line 451 of the file phantom/src/main/eos_mesa_microphysics.f90,
             ! logRho = logV + 0.7*logE - 20
@@ -225,16 +222,6 @@ class EoS_MESA_table:
             (2023-11-02 over Slack.)
             
         """
-
-        return_quantity = False
-        if isinstance(rho, units.Quantity):
-            rho = rho.cgs.value
-            return_quantity = True
-        if isinstance(u, units.Quantity):
-            u = u.cgs.value
-            return_quantity = True
-        if return_as_quantity is not None:
-            return_quantity = return_as_quantity
 
         log10_E = np.log10(u)
         log10_V = 20. + np.log10(rho) - 0.7 * log10_E
@@ -246,25 +233,22 @@ class EoS_MESA_table:
             val_type = 'log10_' + val_name
         else:
             val_type = val_name
-            
 
+        # get results
         ans = self._interp_dict[val_type](_interp_coord, method=method)
 
+        # post-processing
         if val_name in ['rho', 'P', 'Pgas', 'T']:
             ans = 10**ans
 
-        if return_quantity:
-            if val_name == 'rho':
-                val_units_text = 'density'
-            elif val_name == 'T':
-                val_units_text = 'temp'
-            else:
-                raise NotImplementedError
-            ans = set_as_quantity(ans, CGS_UNITS['density'])
-            
-
         return ans
-    
+
+        
+
+
+
+
+
 
 
 
@@ -272,10 +256,56 @@ class EoS_MESA_table:
 
 class EoS_MESA(EoS_Base):
     """Class for MESA Equation of State Objects."""
+    
     def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
         self.__mesa_table = EoS_MESA_table(params, settings, iverbose)
 
         return
 
+    
+    def get_val_cgs(
+        self,
+        val_name: str,
+        rho: np.ndarray,
+        u  : np.ndarray,
+        *params_list,
+        method  : str|None = None,
+        iverbose: int = 3,
+        **params_dict,
+    ) -> np.ndarray:
+        """Getting specific values from EoS and rho and u in cgs units.
+
+        Parameters
+        ----------
+        val_name: str
+            name of value to be interpolated.
+            see the fields specified in self._table_dtype.
+            e.g. 'rho'
+
+        rho, u: np.ndarray
+            density and specific internal energy in cgs units.
+            should have same shape.
+
+        return_as_quantity: bool | None
+            if the results should be returned as a astropy.units.Quantity.
+            If None, will only return as that if one of the input rho or u is that.
+            
+        iverbose: int
+            How much errors, warnings, notes, and debug info to be print on screen.
+
+
+        ... and other params specified by specific EoS (see their respective docs.)
+
+
+        Returns
+        -------
+        ans: np.ndarray | units.Quantity
+            calc-ed EoS values.
+        """
+        return self.__mesa_table.get_val_cgs(
+            val_name, rho, u, *params_list,
+            return_as_quantity=return_as_quantity, iverbose=iverbose,
+            **params_dict,
+        )
 
 
