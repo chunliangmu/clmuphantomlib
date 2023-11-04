@@ -16,7 +16,7 @@ Owner: Chunliang Mu
 #  import (my libs)
 from .log import error, warn, note, debug_info
 from .settings import Settings, DEFAULT_SETTINGS
-from .units import get_units_cgs
+from .units_util import set_as_quantity, get_units_cgs
 
 #  import (general)
 import numpy as np
@@ -77,6 +77,7 @@ class EoS_Base:
         ans: np.ndarray | units.Quantity
             calc-ed EoS values.
         """
+        debug_info("EoS_Base.get_val_cgs()", iverbose, "Calling this.")
         raise NotImplementedError
 
 
@@ -124,8 +125,7 @@ class EoS_Base:
             calc-ed EoS values.
         
         """
-        raise NotImplementedError
-
+        debug_info("EoS_Base.get_val()", iverbose, "Calling this.")
         return_quantity = False
         if isinstance(rho, units.Quantity):
             rho = rho.cgs.value
@@ -163,6 +163,7 @@ class EoS_Base:
         
         See self.get_val_cgs() for more info.
         """
+        debug_info("EoS_Base.get_temp()", iverbose, "Calling this.")
         return self.get_val(
             'T', rho, u, *params_list,
             return_as_quantity=return_as_quantity, iverbose=iverbose,

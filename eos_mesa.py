@@ -14,10 +14,10 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import error, warn, note, debug_info
-from .settings  import Settings, DEFAULT_SETTINGS
-from .readwrite import fortran_read_file_unformatted
-from .eos_base  import EoS_Base
-from .units import set_as_quantity, CGS_UNITS
+from .settings   import Settings, DEFAULT_SETTINGS
+from .readwrite  import fortran_read_file_unformatted
+from .eos_base   import EoS_Base
+from .units_util import set_as_quantity, CGS_UNITS
 
 #  import (general)
 import os
@@ -302,9 +302,10 @@ class EoS_MESA(EoS_Base):
         ans: np.ndarray | units.Quantity
             calc-ed EoS values.
         """
+        debug_info("EoS_MESA.get_val_cgs()", iverbose, "Calling this.")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
-            return_as_quantity=return_as_quantity, iverbose=iverbose,
+            iverbose=iverbose,
             **params_dict,
         )
 
