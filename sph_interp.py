@@ -34,7 +34,7 @@ import sarracen
 
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def _get_sph_interp_phantom_np(
     locs : np.ndarray,
     vals : np.ndarray,
@@ -46,6 +46,8 @@ def _get_sph_interp_phantom_np(
 ) -> np.ndarray:
     """SPH interpolation subprocess.
 
+    WARNING: This func requires a very specific input array shape, and it does NOT do sanity check!
+
     Using numpy array as input and numba for acceleration.
     
     *** THIS FUNC DOES NOT DO SAINTY CHECK ***
@@ -55,10 +57,10 @@ def _get_sph_interp_phantom_np(
 
     Parameters
     ----------
-    locs : (ndim,)  or (nlocs,  ndim)-shaped np.ndarray,
-    vals : (npart,) or (npart, nvals)-shaped np.ndarray,
-    xyzs :             (npart,  ndim)-shaped np.ndarray,
-    hs   :                   (npart,)-shaped np.ndarray,
+    locs : (nlocs, 1,  ndim)-shaped np.ndarray,
+    vals : (1, npart, nvals)-shaped np.ndarray,
+    xyzs : (1, npart,  ndim)-shaped np.ndarray,
+    hs   : (1, npart,      )-shaped np.ndarray,
     kernel_w: sarracen.kernels.BaseKernel.w
     ndim : int = 3
     
@@ -69,29 +71,16 @@ def _get_sph_interp_phantom_np(
         i.e. if vals is (npart, )-shaped, then (,) or (nlocs,)-shaped array will be returned;
         if vals is (npart, nvals)-shaped, then (nlocs,  nvals)-shaped array will be returned.
     """
-    # fix input shapes
-    do_squeeze = False
-    if locs.ndim == 1:
-        locs = locs[np.newaxis, :]
-    if vals.ndim == 1:
-        vals = vals[:, np.newaxis]
-        do_squeeze = True
 
-
-
-    xyzs_alt = xyzs[np.newaxis, :, :]
-    locs_alt = locs[:, np.newaxis, :]
-    vecs_alt = xyzs_alt - locs_alt
-    rad2_alt = np.sum(vecs_alt**2, axis=-1)
+    # dist2: (nlocs, npart)-shaped np.ndarray
+    dist2 = np.sum((xyzs - locs)**2, axis=-1)
     # qs : (nlocs, npart)-shaped array
-    qs = rad2_alt**0.5 / hs[np.newaxis, :]
+    qs = dist2**0.5 / hs
     # w_q: (nlocs, npart, 1)-shaped array
-    w_q = kernel_w(qs, ndim)[:, :, np.newaxis]
+    w_q = kernel_w(qs, ndim)[:, :, np.newaxis] # [:, :, np.newaxis]
+    print(w_q.shape)
     # ans: (nlocs, nvals)-shaped array
-    ans = np.sum(vals[np.newaxis, :, :] * w_q, axis=1) / np.sum(w_q, axis=1)
-
-    if do_squeeze:
-        ans = np.squeeze(ans)
+    ans = np.sum(vals * w_q, axis=1) / np.sum(w_q, axis=1)
     return ans
 
 
@@ -222,6 +211,22 @@ def get_sph_interp_phantom(
     hs   = np.array(sdf['h'], copy=False, order='C')                # npart-shaped array
 
     
+    # fix input shapes
+    if locs.ndim == 1:
+        locs = locs[np.newaxis, :]
+    do_squeeze = False
+    if vals.ndim == 1:
+        vals = vals[:, np.newaxis]
+        do_squeeze = True
+    if xyzs.ndim == 1:
+        xyzs = xyzs[:, np.newaxis]
+
+    vals = vals[np.newaxis, :, :] # (1, npart, nvals)-shaped
+    locs = locs[:, np.newaxis, :] # (nlocs, 1, ndim)-shaped
+    xyzs = xyzs[np.newaxis, :, :] # (1, npart, ndim)-shaped
+    hs   = hs[  np.newaxis, :]    # (1, npart,)-shaped
+
+    
     # sanity checks
 
     # warn if try to interp unexpected quantities
@@ -247,6 +252,10 @@ def get_sph_interp_phantom(
         )
 
 
-
     # calc
-    return _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, ndim)
+    ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, ndim)
+    
+    if do_squeeze:
+        ans = np.squeeze(ans)
+
+    return ans
