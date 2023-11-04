@@ -46,7 +46,7 @@ def _get_sph_interp_phantom_np(
 ) -> np.ndarray:
     """SPH interpolation subprocess.
 
-    note: This func requires a very specific input array shape.
+    WARNING: This func requires a very specific input array shape, and it does NOT do sanity check!
 
     Using numpy array as input and numba for acceleration.
     
@@ -71,66 +71,16 @@ def _get_sph_interp_phantom_np(
         i.e. if vals is (npart, )-shaped, then (,) or (nlocs,)-shaped array will be returned;
         if vals is (npart, nvals)-shaped, then (nlocs,  nvals)-shaped array will be returned.
     """
-    
-    # fix input shapes
-    # locs: (nlocs, 1, ndim)-shaped
-    if locs.ndim == 1:
-        locs = np.expand_dims(locs, 0)
-        locs = np.expand_dims(locs, 1)
-    elif locs.ndim == 2:
-        locs = np.expand_dims(locs, 1)
-    elif locs.ndim == 3:
-        pass
-    else:
-        raise ValueError(f"locs should be (nlocs, 1, ndim)-shaped, but it is {locs.shape}-shaped.")
 
-    # vals: (1, npart, nvals)-shaped
-    do_squeeze = False
-    if vals.ndim == 1:
-        vals = np.expand_dims(vals, 1)
-        vals = np.expand_dims(vals, 0)
-        do_squeeze = True
-    elif vals.ndim == 2:
-        vals = np.expand_dims(vals, 0)
-    elif vals.ndim == 3:
-        pass
-    else:
-        raise ValueError(f"vals should be (1, npart, nvals)-shaped, but it is {vals.shape}-shaped.")
-
-    # xyzs: (1, npart,  ndim)-shaped
-    if xyzs.ndim == 1:
-        xyzs = np.expand_dims(xyzs, 1)
-        xyzs = np.expand_dims(xyzs, 0)
-    elif xyzs.ndim == 2:
-        xyzs = np.expand_dims(xyzs, 0)
-    elif xyzs.ndim == 3:
-        pass
-    else:
-        raise ValueError(f"vals should be (1, npart,  {ndim})-shaped, but it is {xyzs.shape}-shaped.")
-
-    # hs: (1, npart,)-shaped
-    if hs.ndim == 1:
-        hs   = np.expand_dims(hs, 0)
-    elif hs.ndim == 2:
-        pass
-    else:
-        raise ValueError(f"hs should be (1, npart)-shaped, but it is {hs.shape}-shaped.")
-    
-    
     # dist2: (nlocs, npart)-shaped np.ndarray
     dist2 = np.sum((xyzs - locs)**2, axis=-1)
     # qs : (nlocs, npart)-shaped array
     qs = dist2**0.5 / hs
     # w_q: (nlocs, npart, 1)-shaped array
-    w_q = np.expand_dims(kernel_w(qs, ndim), 2)
+    w_q = np.expand_dims(kernel_w(qs, ndim), 2) # [:, :, np.newaxis]
     print(w_q.shape)
     # ans: (nlocs, nvals)-shaped array
     ans = np.sum(vals * w_q, axis=1) / np.sum(w_q, axis=1)
-
-    
-    if do_squeeze:
-        ans = np.squeeze(ans)
-
     return ans
 
 
@@ -260,6 +210,21 @@ def get_sph_interp_phantom(
     xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
     hs   = np.array(sdf['h'], copy=False, order='C')                # npart-shaped array
 
+    
+    # fix input shapes
+    if locs.ndim == 1:
+        locs = locs[np.newaxis, :]
+    do_squeeze = False
+    if vals.ndim == 1:
+        vals = vals[:, np.newaxis]
+        do_squeeze = True
+    if xyzs.ndim == 1:
+        xyzs = xyzs[:, np.newaxis]
+
+    vals = vals[np.newaxis, :, :] # (1, npart, nvals)-shaped
+    locs = locs[:, np.newaxis, :] # (nlocs, 1, ndim)-shaped
+    xyzs = xyzs[np.newaxis, :, :] # (1, npart, ndim)-shaped
+    hs   = hs[  np.newaxis, :]    # (1, npart,)-shaped
 
     
     # sanity checks
@@ -289,5 +254,8 @@ def get_sph_interp_phantom(
 
     # calc
     ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, ndim)
+    
+    if do_squeeze:
+        ans = np.squeeze(ans)
 
     return ans
