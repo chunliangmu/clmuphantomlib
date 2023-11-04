@@ -78,7 +78,6 @@ def _get_sph_interp_phantom_np(
     qs = dist2**0.5 / hs
     # w_q: (nlocs, npart, 1)-shaped array
     w_q = np.expand_dims(kernel_w(qs, ndim), 2) # [:, :, np.newaxis]
-    print(w_q.shape)
     # ans: (nlocs, nvals)-shaped array
     ans = np.sum(vals * w_q, axis=1) / np.sum(w_q, axis=1)
     return ans
@@ -243,7 +242,7 @@ def get_sph_interp_phantom(
             "if the simulation is 3D, this means that the following calculations will be wrong.",
             "Are you sure you know what you are doing?",
         )
-    if xyzs.shape != (npart, ndim):
+    if xyzs.shape != (1, npart, ndim):
         warn(
             'get_sph_interp()', iverbose,
             f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",

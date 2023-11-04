@@ -27,6 +27,9 @@ MyPhantomDataFrames column names:
 """
 
 
+from . import sph_interp
+
+
 
 from .geometry import *
 from .readwrite import *
