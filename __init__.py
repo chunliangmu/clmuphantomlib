@@ -31,5 +31,6 @@ MyPhantomDataFrames column names:
 from .geometry import *
 from .readwrite import *
 from .light import *
+from .eos import get_eos
 
 from .main  import *
