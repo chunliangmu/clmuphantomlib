@@ -305,7 +305,7 @@ class EoS_MESA(EoS_Base):
         debug_info("EoS_MESA.get_val_cgs()", iverbose, "Calling this.")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
-            iverbose=iverbose,
+            method=method, iverbose=iverbose,
             **params_dict,
         )
 
