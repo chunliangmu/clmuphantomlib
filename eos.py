@@ -15,11 +15,20 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-#from .log import error, warn, note, debug_info
+from .log import error, warn, note, debug_info
+from .settings import Settings, DEFAULT_SETTINGS
+from .eos_base import EoS_Base
 from .eos_mesa import EoS_MESA
 
 #  import (general)
 
+def get_eos(ieos: int, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3) -> EoS_Base:
+    """Get an EoS object, which you can use to get temp etc values fro rho and u."""
+    if ieos == 10:
+        return EoS_MESA(params, settings, iverbose)
+    else:
+        error('get_eos()', iverbose, f"Unrecognized ieos={ieos}.")
+        raise NotImplementedError
 
 
 
