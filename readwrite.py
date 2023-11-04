@@ -257,7 +257,7 @@ def json_dump(
     overwrite_obj = False,
     overwrite_obj_kwds = False,
     ignore_unknown_types: bool = False,
-    indent: int|None = None,
+    indent: int|None = 1,
     iverbose: int = 1,
 ):
     """Dump obj to file-like fp as a json file in my custom format with support of numpy arrays etc.
