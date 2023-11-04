@@ -199,8 +199,7 @@ def get_sph_interp(
 
     # warn if try to interp unexpected quantities
     if target not in ['rho', 'u', 'vx', 'vy', 'vz']:
-        warn(iverbose, 'get_sph_interp()', f"""*   Warning: get_sph_interp(...):
-Kernel interpolation should be used with conserved quantities (density, energy, momentum),
+        warn('get_sph_interp()', iverbose, f"""Kernel interpolation should be used with conserved quantities (density, energy, momentum),
 but you are trying to do it with '{target}', which could lead to problematic results.""")      
 
     
