@@ -30,7 +30,7 @@ Assuming temperature unit being K. Reads & handles other units from phantom data
 # my libs
 from .log import error, warn, note, debug_info
 from .geometry import *
-from .units import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature
+from .units_util import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature
 
 
 
