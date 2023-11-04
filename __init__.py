@@ -15,6 +15,15 @@ It is developped as part of my PhD project "Non-adiabatic common envelope simula
 Work on this project started on 2023-01-25.
 
 Assuming temperature unit being K. Reads & handles other units from phantom data dumps.
+
+
+Note:
+MyPhantomDataFrames column names:
+    rho: density
+    m  : mass
+    h  : smoothing length
+    u  : specificInternalEnergy
+    T  : temperature
 """
 
 

@@ -21,7 +21,7 @@ from astropy import constants as const
 
 
 
-# Functions
+# Functions and global constants
 
 
 
@@ -58,26 +58,59 @@ def complete_units_dict(base_units: dict, iverbose: int=3) -> dict:
     return base_units
 
 
+def get_units_field_name(val_name: str) -> str:
+    """Translate sarracen data frame column name into units field name,
+    as shown in complete_units_dict().
+    """
+    if val_name == 'rho':
+        return 'density'
+    elif val_name in ['u']:
+        return 'specificEnergy'
+    elif val_name in ['T', 'temp', 'temperature', 'Tdust', 'Tgas']:
+        return 'temp'
+    elif val_name in ['m', 'mass']:
+        return 'mass'
+    elif val_name in ['x', 'y', 'z']:
+        return 'dist'
+    elif val_name in ['t', 'time']:
+        return 'time'
+    elif val_name in ['v', 'vx', 'vy', 'vz']:
+        return 'speed'
+    elif val_name in ['kappa', 'opacity']:
+        return 'opacity'
+    else:
+        raise NotImplementedError
+
+
 
 # default units (not really used much, just for fun)
 
-DEFAULT_UNITS = {
+__DEFAULT_UNITS = {
     'dist': units.R_sun,
     'mass': units.M_sun,
     'temp': units.K,
 }
 # define the unit of time such that G is 1 in the new unit system
-DEFAULT_UNITS['time'] = units.def_unit(
+__DEFAULT_UNITS['time'] = units.def_unit(
     "unit_time",
-    ( ( DEFAULT_UNITS['dist']**3 / (DEFAULT_UNITS['mass'] * const.G) )**0.5 ).to(units.s),
+    ( ( __DEFAULT_UNITS['dist']**3 / (__DEFAULT_UNITS['mass'] * const.G) )**0.5 ).to(units.s),
 )
-DEFAULT_UNITS = complete_units_dict(DEFAULT_UNITS)
+__DEFAULT_UNITS = complete_units_dict(__DEFAULT_UNITS)
+DEFAULT_UNITS = __DEFAULT_UNITS.copy()
 
 
-CGS_UNITS = {
+__CGS_UNITS = {
     'dist': units.cm,
     'mass': units.g,
     'time': units.s,
     'temp': units.K,
 }
-CGS_UNITS = complete_units_dict(CGS_UNITS)
+__CGS_UNITS = complete_units_dict(__CGS_UNITS)
+CGS_UNITS = __CGS_UNITS.copy()
+
+
+
+def get_units_cgs(val_name: str) -> astropy.units.core.Unit:
+    """Get cgs units for a type of values."""
+    return __CGS_UNITS[get_units_field_name(val_name)]
+    
