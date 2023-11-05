@@ -22,7 +22,7 @@ from numba import jit
 # Functions
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_r_from_loc(loc) -> float:
     """Return norm of a 3D vector.
     
@@ -35,7 +35,7 @@ def get_r_from_loc(loc) -> float:
     return (loc[0]**2 + loc[1]**2 + loc[2]**2)**0.5
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
     """Return distance squared between two N-dimensional points (arrays).
     
@@ -48,7 +48,7 @@ def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
     return np.sum((pt2 - pt1)**2, axis=-1)
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
     """Return the closest point on a line to another point(s) pt0.
     

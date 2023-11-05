@@ -27,7 +27,7 @@ import sarracen
 # Functions
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
     """Get unit vector of a ray (which is a line).
     
