@@ -30,10 +30,11 @@ MyPhantomDataFrames column names:
 from . import sph_interp
 
 
-
+from .settings import DEFAULT_SETTINGS
 from .geometry import *
 from .readwrite import *
 from .light import *
 from .eos import get_eos
+
 
 from .main  import *
