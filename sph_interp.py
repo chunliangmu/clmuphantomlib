@@ -33,6 +33,22 @@ import sarracen
 # Functions
 
 
+@jit(nopython=True)
+def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+    """Getting smoothing length from density.
+    
+    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    rho = hfact**ndim * (m / h**ndim)
+    for ndim-dimension and hfact the constant.
+    So,
+    h = hfact * (mpart / rho)**(1./ndim)
+    """
+    return hfact * (mpart / rho)**(1./ndim)
+
+
+
+
+
 
 @jit(nopython=True)
 def _get_sph_interp_phantom_np(
@@ -132,7 +148,7 @@ def get_sph_interp_phantom(
 
     Note: You should only interpolate conserved quantities! (i.e. density rho / specific energy u / momentum v)
 
-    make sure locs are in the same unit as sdf distance unit!
+    Make sure locs are in the same unit as sdf distance unit!
 
 
     valssuming Phantom.
@@ -258,3 +274,7 @@ def get_sph_interp_phantom(
         ans = np.squeeze(ans)
 
     return ans
+
+
+# set alias
+get_sph_interp = get_sph_interp_phantom

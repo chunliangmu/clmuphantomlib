@@ -16,6 +16,9 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .geometry import get_dist2_between_2pt
+from .sph_interp import get_sph_interp, get_h_from_rho
+from .units_util import set_as_quantity, set_as_quantity_temperature
+from .eos_base import EoS_Base
 
 #  import (general)
 import numpy as np
@@ -56,6 +59,9 @@ def get_photosphere_on_ray(
     sdf, ray,
     calc_params : list = ['loc', 'R1'],
     hfact : float = None,
+    mpart : float = None,
+    eos   : EoS_Base = None,
+    sdf_units: dict  = None,
     ray_unit_vec : np.ndarray = None,
     kernel: sarracen.kernels.base_kernel = None,
     do_skip_zero_dtau_pts : bool = True,
@@ -102,14 +108,33 @@ def get_photosphere_on_ray(
             'R1 ': will return float.
                 distance between photosphere location and the ray[0].
                 Could be negative if loc is on the other side of the ray.
-            #'h'  : will return float.
-            #    smoothing length at the photosphere.
-            #'T'  : will return float.
-            #    Temperature at the photosphere.
+            'rho': will return float.
+                density at the photosphere.
+            'h'  : will return float.
+                smoothing length at the photosphere.
+                Will always calc 'rho' if to calc 'h'.
+            'T'  : will return float.
+                Temperature at the photosphere.
+                Warning: if not supplied 'temp' keyword in sdf_units, will return in cgs units.
     
-    hfact: float
-        $h_\mathrm{fact}$ used in the phantom sim.
-        If None, will get from sdf.params['hfact']
+    hfact, mpart: float
+        $h_\mathrm{fact}$ and particle mass used in the phantom sim.
+        If None, will get from sdf.params['hfact'] and sdf.params['mass']
+        Only useful if you are calc-ing 'h'
+
+    eos: .eos_base.EoS_BASE
+        Equation of state object defined in eos_base.py
+        Only useful if you are calc-ing 'T'
+
+    sdf_units: dict
+        Only useful if you are calc-ing 'T'
+        in which case, supply rho, u, and T units in this dict
+        e.g.
+        sdf_units = {
+            'density': units.Msun / units.Rsun**3,
+            'specificEnergy': units.Rsun**2 / units.s**2,
+            'temp': units.K,
+        }
     
     ray_unit_vec: (3,)-shaped np.ndarray
         unit vector of ray. will calc this if not supplied.
@@ -149,8 +174,6 @@ def get_photosphere_on_ray(
     """
 
     # init
-    if hfact is None:
-        hfact = sdf.params['hfact']
     if ray_unit_vec is None:
         ray_unit_vec = get_ray_unit_vec(ray)
     if kernel is None:
@@ -218,10 +241,33 @@ def get_photosphere_on_ray(
             np.interp(photosphere_tau, taus_waypts, pts_waypts[:, ax], right=np.nan)
             for ax in range(pts_waypts.shape[1])
         ])
-    if 'R1' in calc_params:
+
+        # do prerequisite check
+        calc_params = list(calc_params)
+        if 'h' in calc_params:
+            if 'rho' not in calc_params: calc_params.append('rho')
+        if 'T'   in calc_params:
+            if 'rho' not in calc_params: calc_params.append('rho')
+            if 'u'   not in calc_params: calc_params.append('u')
+            
+    
+    if 'R1'  in calc_params:
         photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
-    if 'h'  in calc_params:
-        raise NotImplementedError()
-    if 'T'  in calc_params:
-        raise NotImplementedError()
+    if 'rho' in calc_params:
+        photosphere['rho']  = get_sph_interp(sdf, 'rho', photosphere['loc'])
+    if 'u' in calc_params:
+        photosphere['u'  ]  = get_sph_interp(sdf, 'u'  , photosphere['loc'])
+    if 'h'   in calc_params:
+        if hfact is None: hfact = sdf.params['hfact']
+        if mpart is None: hfact = sdf.params['mass']
+        photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
+    if 'T'   in calc_params:
+        if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
+        photosphere['T']  = eos.get_temp(
+            set_as_quantity(photosphere['rho'], sdf_units['density']),
+            set_as_quantity(photosphere['u']  , sdf_units['specificEnergy']))
+        if 'temp' in sdf_units:
+            photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
+        else:
+            photosphere['T'] = photosphere['T'].value
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)

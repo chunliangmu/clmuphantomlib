@@ -31,7 +31,7 @@ Assuming temperature unit being K. Reads & handles other units from phantom data
 from .log import error, warn, note, debug_info
 from .geometry import *
 from .units_util import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature
-
+from .sph_interp import get_sph_interp
 
 
 # In[3]:
@@ -154,94 +154,6 @@ def get_sph_close_pts_indices(
     indices = r2s < r2_range
     return indices
 
-
-# In[11]:
-
-
-# SPH interpolation
-
-def get_sph_interp(
-    sdf     : sarracen.sarracen_dataframe.SarracenDataFrame,
-    target  : str,
-    locs    : np.ndarray,
-    kernel  : sarracen.kernels.BaseKernel = None,
-    iverbose: int = 1,
-) -> {float, np.ndarray}:
-    """SPH interpolation. Assuming 3D.
-
-    Note: You should only interpolate conserved quantities! (i.e. density rho / specific energy u / momentum v)
-    
-    
-    Parameters
-    ----------
-    sdf: sarracen.SarracenDataFrame
-        Must contain columns: x, y, z, m, h.
-        If density (rho) is not in sdf, will compute rho.
-        
-    target: str
-        Column label of the target smoothing data in sdf
-        
-    locs: np.ndarray
-        (3) or (..., 3)-shaped array determining the location for interpolation.
-        
-    kernel: sarracen.kernels.base_kernel
-        Smoothing kernel for SPH data interpolation.
-        If None, will use the one in sdf.
-
-    iverbose: int
-        How much warnings, notes, and debug info to be print on screen. 
-        
-    Returns
-    -------
-    ans: float or np.ndarray
-        Depending on the shape of locs, returns float or array of float.
-    """
-
-    # warn if try to interp unexpected quantities
-    if target not in ['rho', 'u', 'vx', 'vy', 'vz']:
-        warn('get_sph_interp()', iverbose, f"""Kernel interpolation should be used with conserved quantities (density, energy, momentum),
-but you are trying to do it with '{target}', which could lead to problematic results.""")      
-
-    
-    # init
-    ndim = 3
-    npart = len(sdf)
-    if kernel is None: kernel = sdf.kernel
-    kernel_radius = kernel.get_radius()
-    pts = np.array(sdf[['x', 'y', 'z']])    # (npart, 3)-shaped array
-    hs  = np.array(sdf['h'])    # npart-shaped array
-    masses = np.array(sdf['m'])
-    if 'rho' not in sdf.columns: sdf.calc_density()
-    rhos = np.array(sdf['rho'])
-    As = np.array(sdf[target])
-    locs = np.array(locs)
-    mA_div_rhoh3 = masses * As / rhos / hs**ndim
-
-    # calc
-    if locs.ndim == 1:
-        loc = locs
-        if len(loc) != ndim:
-            raise ValueError(f"{loc.shape=} is not (3)")
-            
-        qs = np.sum((pts - loc)**2, axis=-1)**0.5 / hs
-        ans = np.sum(mA_div_rhoh3 * kernel.w(qs, ndim))
-        return ans
-    elif locs.ndim == 2:
-        if locs.shape[-1] != ndim:
-            raise ValueError(f"{loc.shape=} is not (..., {ndim})")
-            
-        ans_shape = (*locs.shape[:-1], *As.shape[1:])
-        ans = np.full(ans_shape, np.nan, dtype=As.dtype)
-        # non-zero range of the kernel
-        r2_range = (kernel_radius * hs)**2
-        for i, loc in enumerate(locs):
-            r2s = np.sum((pts - loc)**2, axis=-1)
-            indexs = r2s < r2_range
-            qs_sliced = r2s[indexs]**0.5 / hs[indexs]
-            ans[i] = np.sum(mA_div_rhoh3[indexs] * kernel.w(qs_sliced, ndim))
-        return ans
-    else:
-        raise NotImplementedError(f"{locs.ndim=} higher than 2 is not implemented")
 
 
 # In[12]:
