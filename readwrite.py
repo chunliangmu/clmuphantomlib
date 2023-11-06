@@ -58,6 +58,7 @@ def _json_encode(
         '_type_' : # type of the data stored
             Supported type:
                  None  (or other False-equivalent things): return '_data_' as is
+                'np.bool_' : stored as bool (Will NOT read back as np.bool_ !)
                 'tuple': tuple stored as list
                 'numpy.ndarray': numpy array stored as list by default
                 'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
@@ -142,6 +143,8 @@ def _json_encode(
             pass
         # custom formatting
         #  *** Add new type here! ***
+        elif isinstance( obj, np.bool_):
+            obj = bool(obj)
         elif isinstance( obj, tuple ):
             obj = {'_type_': 'tuple', '_data_': list(obj)}
         elif type(obj) is np.ndarray :
@@ -162,7 +165,7 @@ def _json_encode(
             if ignore_unknown_types:
                 return "-NotImplemented-"
             else:
-                raise NotImplementedError
+                raise NotImplementedError(f"_json_encode(): Unknown object type: {type(obj)}")
     return obj
 
 
