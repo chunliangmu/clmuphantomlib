@@ -33,7 +33,7 @@ import sarracen
 # Functions
 
 
-@jit(nopython=True)
+@jit(nopython=False)
 def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
     """Getting smoothing length from density.
     

@@ -53,7 +53,7 @@ def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
 
 
 
-@jit(nopython=False)
+#@jit(nopython=False)
 def get_photosphere_on_ray(
     pts_on_ray, dtaus, pts_order,
     sdf, ray,
@@ -110,6 +110,8 @@ def get_photosphere_on_ray(
                 Could be negative if loc is on the other side of the ray.
             'rho': will return float.
                 density at the photosphere.
+            'u': will return float.
+                specific internel energy at the photosphere.
             'h'  : will return float.
                 smoothing length at the photosphere.
                 Will always calc 'rho' if to calc 'h'.
@@ -118,13 +120,13 @@ def get_photosphere_on_ray(
                 Warning: if not supplied 'temp' keyword in sdf_units, will return in cgs units.
     
     hfact, mpart: float
+        Only useful if you are calc-ing 'h'
         $h_\mathrm{fact}$ and particle mass used in the phantom sim.
         If None, will get from sdf.params['hfact'] and sdf.params['mass']
-        Only useful if you are calc-ing 'h'
 
     eos: .eos_base.EoS_BASE
-        Equation of state object defined in eos_base.py
         Only useful if you are calc-ing 'T'
+        Equation of state object defined in eos_base.py
 
     sdf_units: dict
         Only useful if you are calc-ing 'T'
@@ -249,7 +251,6 @@ def get_photosphere_on_ray(
         if 'T'   in calc_params:
             if 'rho' not in calc_params: calc_params.append('rho')
             if 'u'   not in calc_params: calc_params.append('u')
-            
     
     if 'R1'  in calc_params:
         photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
@@ -259,15 +260,20 @@ def get_photosphere_on_ray(
         photosphere['u'  ]  = get_sph_interp(sdf, 'u'  , photosphere['loc'])
     if 'h'   in calc_params:
         if hfact is None: hfact = sdf.params['hfact']
-        if mpart is None: hfact = sdf.params['mass']
+        if mpart is None: mpart = sdf.params['mass']
         photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
     if 'T'   in calc_params:
         if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
-        photosphere['T']  = eos.get_temp(
-            set_as_quantity(photosphere['rho'], sdf_units['density']),
-            set_as_quantity(photosphere['u']  , sdf_units['specificEnergy']))
-        if 'temp' in sdf_units:
-            photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
-        else:
-            photosphere['T'] = photosphere['T'].value
+        try:
+            photosphere['T']  = eos.get_temp(
+                set_as_quantity(photosphere['rho'], sdf_units['density']),
+                set_as_quantity(photosphere['u']  , sdf_units['specificEnergy']))
+            if 'temp' in sdf_units:
+                photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
+            else:
+                photosphere['T'] = photosphere['T'].value
+        except ValueError:
+            # eos interp could go out of bounds if it's a tabulated EoS
+            # which will raise a Value Error
+            photosphere['T'] = np.nan
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
