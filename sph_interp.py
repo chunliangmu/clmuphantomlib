@@ -151,7 +151,7 @@ def get_sph_interp_phantom(
     Make sure locs are in the same unit as sdf distance unit!
 
 
-    valssuming Phantom.
+    Assuming Phantom.
         (That is, the smoothing length h is dynamically scaled with density rho using
         rho = hfact**d * (m / h**d)
         for d-dimension and constant hfact.)
