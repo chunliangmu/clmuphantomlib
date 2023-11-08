@@ -177,7 +177,7 @@ class EoS_MESA_table:
                 )
         
         self._interp_dict = {
-            val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='linear')
+            val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='linear', bounds_error=False)
             for val_name in self._table_noZX.dtype.names
         }
             
@@ -191,7 +191,6 @@ class EoS_MESA_table:
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
-        bounds_error: bool = False,
         iverbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
@@ -236,7 +235,7 @@ class EoS_MESA_table:
             val_type = val_name
 
         # get results
-        ans = self._interp_dict[val_type](_interp_coord, method=method, bounds_error=bounds_error)
+        ans = self._interp_dict[val_type](_interp_coord, method=method)
 
         # post-processing
         if val_name in ['rho', 'P', 'Pgas', 'T']:
@@ -271,7 +270,6 @@ class EoS_MESA(EoS_Base):
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
-        bounds_error: bool = False,
         iverbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
@@ -307,7 +305,7 @@ class EoS_MESA(EoS_Base):
         debug_info("EoS_MESA.get_val_cgs()", iverbose, "Calling this.")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
-            method=method, bounds_error=bounds_error, iverbose=iverbose,
+            method=method, iverbose=iverbose,
             **params_dict,
         )
 
