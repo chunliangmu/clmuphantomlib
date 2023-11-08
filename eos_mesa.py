@@ -191,6 +191,7 @@ class EoS_MESA_table:
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
+        bounds_error: bool = False,
         iverbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
@@ -235,7 +236,7 @@ class EoS_MESA_table:
             val_type = val_name
 
         # get results
-        ans = self._interp_dict[val_type](_interp_coord, method=method)
+        ans = self._interp_dict[val_type](_interp_coord, method=method, bounds_error=bounds_error)
 
         # post-processing
         if val_name in ['rho', 'P', 'Pgas', 'T']:
@@ -270,6 +271,7 @@ class EoS_MESA(EoS_Base):
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
+        bounds_error: bool = False,
         iverbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
@@ -305,7 +307,7 @@ class EoS_MESA(EoS_Base):
         debug_info("EoS_MESA.get_val_cgs()", iverbose, "Calling this.")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
-            method=method, iverbose=iverbose,
+            method=method, bounds_error=bounds_error, iverbose=iverbose,
             **params_dict,
         )
 

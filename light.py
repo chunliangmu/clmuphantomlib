@@ -70,6 +70,8 @@ def get_photosphere_on_ray(
 ) -> (dict, (np.ndarray, np.ndarray, np.ndarray)):
     """Calc the location where the photosphere intersect with the ray.
 
+    Assuming 3D.
+
     
     Parameters
     ----------
