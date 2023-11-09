@@ -70,7 +70,7 @@ def complete_units_dict(base_units: dict) -> dict:
     """Complete base_units dict using its mass, dist, time, & temp.
     Will write to base_units so be careful.
     """
-    base_units['none']    = units.dimensionless_unscaled
+    base_units['dimless'] = units.dimensionless_unscaled
     base_units['speed']   = base_units['dist'] / base_units['time']
     base_units['energy']  = base_units['mass'] * base_units['speed']**2
     base_units['specificEnergy'] = base_units['energy'] / base_units['mass']
@@ -104,7 +104,7 @@ def get_units_field_name(val_name: str) -> str:
     elif val_name in ['kappa', 'opacity']:
         return 'opacity'
     elif val_name in ['tau', 'opticalDepth']:
-        return 'none'
+        return 'dimless'
     else:
         raise NotImplementedError
 
