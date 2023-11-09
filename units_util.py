@@ -17,6 +17,7 @@ Owner: Chunliang Mu
 #  import (general)
 from astropy import units
 from astropy import constants as const
+import numpy as np
 
 
 
