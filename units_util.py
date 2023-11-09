@@ -28,19 +28,41 @@ from astropy import constants as const
 
 # astropy.quantity related
 
-def set_as_quantity(var, unit, equivalencies=[], copy=True):
+def set_as_quantity(
+    var  : tuple | list | np.ndarray | units.Quantity,
+    unit : units.Unit | None = None,
+    equivalencies: list = [],
+    copy : bool=True,
+) -> units.Quantity:
     """Convert the var to an astropy quantity with given unit."""
-    if issubclass(type(var), units.quantity.Quantity):
+    if issubclass(type(var), units.Quantity):
         var = var.to(unit, equivalencies=equivalencies, copy=copy)
     else:
         var = units.Quantity(var, unit=unit)
     return var
 
 
-def set_as_quantity_temperature(var, unit=units.Kelvin, copy=True):
+def set_as_quantity_temperature(
+    var  : tuple | list | np.ndarray | units.Quantity,
+    unit : units.Unit = units.Kelvin,
+    copy : bool = True,
+) -> units.Quantity:
     """Convert the var to an astropy quantity with given unit."""
     return set_as_quantity(var, unit=unit, equivalencies=units.equivalencies.temperature(), copy=copy)
 
+
+def get_val_in_unit(
+    var      : tuple | list | np.ndarray | units.Quantity,
+    unit     : units.Unit | None = None,
+    unit_new : units.Unit | None = None,
+    equivalencies: list = [],
+    copy     : bool = True,
+) -> np.ndarray | np.float64:
+    """Convert the var from one unit to a new given unit.
+
+    No need to supply 'unit' if var is already an astropy quantity; in which case, should have no effect even if supplied.
+    """
+    return set_as_quantity(var, unit, equivalencies=equivalencies, copy=copy).to_value(unit_new)
 
 
 def complete_units_dict(base_units: dict, iverbose: int=3) -> dict:
