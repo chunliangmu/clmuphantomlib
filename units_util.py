@@ -66,15 +66,16 @@ def get_val_in_unit(
     return set_as_quantity(var, unit, equivalencies=equivalencies, copy=copy).to_value(unit_new)
 
 
-def complete_units_dict(base_units: dict, iverbose: int=3) -> dict:
+def complete_units_dict(base_units: dict) -> dict:
     """Complete base_units dict using its mass, dist, time, & temp.
     Will write to base_units so be careful.
     """
-    base_units['speed'] = base_units['dist'] / base_units['time']
-    base_units['energy'] = base_units['mass'] * base_units['speed']**2
+    base_units['none']    = units.dimensionless_unscaled
+    base_units['speed']   = base_units['dist'] / base_units['time']
+    base_units['energy']  = base_units['mass'] * base_units['speed']**2
     base_units['specificEnergy'] = base_units['energy'] / base_units['mass']
-    base_units['lum'] = base_units['energy'] / base_units['time']
-    base_units['flux'] = base_units['lum'] / base_units['dist']**2
+    base_units['lum']     = base_units['energy'] / base_units['time']
+    base_units['flux']    = base_units['lum'] / base_units['dist']**2
     base_units['density'] = base_units['mass'] / base_units['dist']**3
     base_units['opacity'] = base_units['dist']**2 / base_units['mass']
     base_units['G'] = base_units['dist']**3 / ( base_units['mass'] * base_units['time']**2 )
@@ -102,6 +103,8 @@ def get_units_field_name(val_name: str) -> str:
         return 'speed'
     elif val_name in ['kappa', 'opacity']:
         return 'opacity'
+    elif val_name in ['tau', 'opticalDepth']:
+        return 'none'
     else:
         raise NotImplementedError
 
