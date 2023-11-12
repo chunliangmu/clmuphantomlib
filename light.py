@@ -253,29 +253,39 @@ def get_photosphere_on_ray(
         if 'T'   in calc_params:
             if 'rho' not in calc_params: calc_params.append('rho')
             if 'u'   not in calc_params: calc_params.append('u')
-    
-    if 'R1'  in calc_params:
-        photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
-    if 'rho' in calc_params:
-        photosphere['rho']  = get_sph_interp(sdf, 'rho', photosphere['loc'])
-    if 'u' in calc_params:
-        photosphere['u'  ]  = get_sph_interp(sdf, 'u'  , photosphere['loc'])
-    if 'h'   in calc_params:
-        if hfact is None: hfact = sdf.params['hfact']
-        if mpart is None: mpart = sdf.params['mass']
-        photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
-    if 'T'   in calc_params:
-        if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
-        try:
-            photosphere['T']  = eos.get_temp(
-                set_as_quantity(photosphere['rho'], sdf_units['density']),
-                set_as_quantity(photosphere['u']  , sdf_units['specificEnergy']))
-            if 'temp' in sdf_units:
-                photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
-            else:
-                photosphere['T'] = photosphere['T'].value
-        except ValueError:
-            # eos interp could go out of bounds if it's a tabulated EoS
-            # which will raise a Value Error
-            photosphere['T'] = np.nan
+
+    # first calc prerequisites
+    for i, calc_name in enumerate(calc_params):
+        do_remove = True
+        if calc_name == 'R1':
+            photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
+        elif calc_name in ['rho', 'u']:
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'])
+        else:
+            do_remove = False
+        if do_remove:
+            calc_params.pop(i)
+            
+    for calc_name in calc_params:
+        if calc_name == 'h':
+            if hfact is None: hfact = sdf.params['hfact']
+            if mpart is None: mpart = sdf.params['mass']
+            photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
+        elif calc_name == 'T':
+            if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
+            try:
+                photosphere['T']  = eos.get_temp(
+                    set_as_quantity(photosphere['rho'], sdf_units['density']),
+                    set_as_quantity(photosphere['u'  ], sdf_units['specificEnergy']))
+                if 'temp' in sdf_units:
+                    photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
+                else:
+                    photosphere['T'] = photosphere['T'].value
+            except ValueError:
+                # eos interp could go out of bounds if it's a tabulated EoS
+                # which will raise a Value Error
+                photosphere['T'] = np.nan
+        else:
+            # just interpolate it
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'])
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
