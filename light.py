@@ -255,21 +255,20 @@ def get_photosphere_on_ray(
             if 'u'   not in calc_params: calc_params.append('u')
 
     # first calc prerequisites
-    for i, calc_name in enumerate(calc_params):
-        do_remove = True
+    calc_these = []
+    for calc_name in calc_params:
         if   calc_name == 'loc':
             # already calc-ed
             pass
         elif calc_name == 'R1':
             photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
         elif calc_name in ['rho', 'u']:
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'])
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], iverbose=iverbose)
         else:
-            do_remove = False
-        if do_remove:
-            calc_params.pop(i)
-            
-    for calc_name in calc_params:
+            calc_these.append(calc_name)
+
+    # now the rest
+    for calc_name in calc_these:
         if calc_name == 'h':
             if hfact is None: hfact = sdf.params['hfact']
             if mpart is None: mpart = sdf.params['mass']
@@ -290,5 +289,5 @@ def get_photosphere_on_ray(
                 photosphere['T'] = np.nan
         else:
             # just interpolate it
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'])
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], iverbose=iverbose)
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
