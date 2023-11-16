@@ -257,7 +257,10 @@ def get_photosphere_on_ray(
     # first calc prerequisites
     for i, calc_name in enumerate(calc_params):
         do_remove = True
-        if calc_name == 'R1':
+        if   calc_name == 'loc':
+            # already calc-ed
+            pass
+        elif calc_name == 'R1':
             photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
         elif calc_name in ['rho', 'u']:
             photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'])
