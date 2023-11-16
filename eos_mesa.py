@@ -32,7 +32,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 
 class EoS_MESA_table:
-    """A class to store and handle stored MESA tables."""
+    """A class to store and handle stored MESA EoS tables from Phantom."""
     def __init__(self, params: dict, settings: Settings, iverbose: int=3):
         self._data_dir    = ""
         self._Z           = np.nan
@@ -160,7 +160,6 @@ class EoS_MESA_table:
                         for i_E in range(no_E):
                             self._table_withZX[i_Z, i_X, i_E, i_V] = fortran_read_file_unformatted(f, 'd', no_var2)
 
-        #raise NotImplementedError
         self._grid_withZX = (self._Z_arr, self._X_arr, self._log10_E_arr, self._log10_V_arr)
         self._grid_noZX   = (self._log10_E_arr, self._log10_V_arr)
         meshgrid_noZX = np.meshgrid(*self._grid_noZX, indexing='ij')
@@ -172,16 +171,22 @@ class EoS_MESA_table:
         self._table_noZX = np.full((no_E, no_V), np.nan, dtype=self._table_dtype)
         for val_name in self._table_withZX.dtype.names:
             self._table_noZX[val_name] = RegularGridInterpolator(
-                self._grid_withZX, self._table_withZX[val_name], method='linear')(
-                meshgrid_noZX_coord
-                )
+                self._grid_withZX, self._table_withZX[val_name], method='linear',
+            )(meshgrid_noZX_coord)
         
         self._interp_dict = {
             val_name: RegularGridInterpolator(self._grid_noZX, self._table_noZX[val_name], method='linear', bounds_error=False)
             for val_name in self._table_noZX.dtype.names
         }
+
+        del self._grid_withZX
+        del self._table_withZX
+        self._grid_withZX = ()
+        self._table_withZX= np.array([])
             
         return self
+
+    
 
 
     def get_val_cgs(
