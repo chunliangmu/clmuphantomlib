@@ -30,7 +30,7 @@ Assuming temperature unit being K. Reads & handles other units from phantom data
 # my libs
 from .log import error, warn, note, debug_info
 from .geometry import *
-from .units_util import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature
+from .units_util import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .sph_interp import get_sph_interp
 
 
@@ -919,6 +919,14 @@ class MyPhantomDataFrames:
         orb_sep = np.sum([(sinks[axis][0] - sinks[axis][1]) ** 2 for axis in 'xyz'])**0.5
         orb_sep = set_as_quantity(orb_sep, self.units['dist']).to(unit)
         return orb_sep
+
+    
+    def get_val(self, val_name:str, dataset_name:str='gas', as_quantity:bool=True, copy:bool=True):
+        """Get value (as astropy quantity by default) from dataset"""
+        ans = self.data[dataset_name][val_name]
+        if as_quantity:
+            ans = set_as_quantity(ans, self.units[get_units_field_name(val_name)], copy=copy)
+        return ans
     
     
     def plot_render(
