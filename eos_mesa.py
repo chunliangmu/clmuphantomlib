@@ -31,6 +31,151 @@ from scipy.interpolate import RegularGridInterpolator
 
 
 
+
+
+
+class EoS_MESA_table_opacity:
+    """A class to store and handle stored MESA opacity tables from Phantom."""
+    def __init__(self, params: dict, settings: Settings, iverbose: int=3):
+        self._data_dir    = ""
+        self._Z           = np.nan
+        self._Z_arr       = np.array([])
+        self._Z_str       = []
+        self._X           = np.nan
+        self._X_arr       = np.array([])
+        self._X_str       = []
+        self._log10_R_arr = np.array([])
+        self._log10_T_arr = np.array([])
+        self._grid_withZX = ()
+        self._table_withZX= np.array([])
+        self._grid_noZX   = ()
+        self._table_noZX  = np.array([])
+        self._table_dtype = []
+        self._interp_dict = {}
+        
+        self.load_mesa_table(params, settings, iverbose=iverbose)
+        return
+
+    
+    def load_mesa_table(self, params: dict, settings: Settings, iverbose: int=3):
+        """Load MESA table.
+    
+        Assuming mesa EoS table stored in directory settings['EoS_MESA_DATA_DIR'].
+        Required keywords in settings:
+            EoS_MESA_DATA_DIR
+            EoS_MESA_table_dtype
+    
+        Required Keywords in params:
+            X: Hydrogen mass fraction
+            Z: Metallicity
+        (Because Phantom assumes a constant pre-determined X and Z when loading MESA EoS-
+         it does linear interpolation on that.)
+
+        Using Z, X, T (temperature), R ($\log_{10}{R} \equiv \log_{10}{\rho} + 18 - 3 \log_{10}{T}$)
+        
+    
+        Returns self.
+            
+        """
+        # init
+        self._data_dir    = settings['EoS_MESA_DATA_DIR']
+        self._Z_arr       = None #settings['EoS_MESA_table_Z_float']
+        self._X_arr       = None #settings['EoS_MESA_table_X_float']
+        self._table_dtype = settings['EoS_MESA_table_dtype']
+        self._Z           = params['Z']
+        self._X           = params['X']
+        self._log10_R_arr = None
+        self._log10_T_arr = None
+        self._table_withZX= None
+        
+        if self._data_dir is None or not os.path.isdir(self._data_dir):
+            raise ValueError(f"settings['MESA_DATA_DIR']={self._data_dir} is not a valid directory.")
+
+        with open(f"{self._data_dir}{os.path.sep}opacs.bindata", 'rb') as f:
+            no_Z, no_X, no_R, no_T = fortran_read_file_unformatted(f, 'i', 4)
+            # as for why does the order of z-x-r-t changed to z-x-t-r, I have zero idea
+            self._Z_arr       = np.array(fortran_read_file_unformatted(f, 'd', no_Z))
+            self._X_arr       = np.array(fortran_read_file_unformatted(f, 'd', no_X))
+            self._log10_T_arr = np.array(fortran_read_file_unformatted(f, 'd', no_T))
+            self._log10_R_arr = np.array(fortran_read_file_unformatted(f, 'd', no_R))
+            
+            # init mesa_table
+            self._table_withZX = np.full((no_Z, no_X, no_T, no_R), np.nan)
+
+            # fill mesa table
+            for i_Z in range(no_Z):
+                for i_X in range(no_X):
+                    for i_t in range(no_T):
+                        self._table_withZX[i_Z, i_X, i_t] = fortran_read_file_unformatted(f, 'd', no_R)
+            self._table_withZX = np.swapaxes(self._table_withZX, 2, 3)
+            
+            self._grid_withZX = (self._Z_arr, self._X_arr, self._log10_R_arr, self._log10_T_arr)
+            self._grid_noZX   = (self._log10_R_arr, self._log10_T_arr)
+            meshgrid_noZX = np.meshgrid(*self._grid_noZX, indexing='ij')
+            meshgrid_noZX_coord = np.stack((
+                np.full(meshgrid_noZX[0].shape, self._Z),
+                np.full(meshgrid_noZX[0].shape, self._X),
+                *meshgrid_noZX),
+                axis=-1)
+            self._table_noZX = RegularGridInterpolator(
+                self._grid_withZX, self._table_withZX, method='linear',
+            )(meshgrid_noZX_coord)
+
+            self._interp_dict = RegularGridInterpolator(self._grid_noZX, self._table_noZX, method='linear', bounds_error=False)
+            # derivatives- ignored
+        return self
+
+    def get_kappa_cgs(
+        self,
+        rho: np.ndarray,
+        T  : np.ndarray,
+        *params_list,
+        method  : str|None = None,
+        iverbose: int = 3,
+        **params_dict,
+    ) -> np.ndarray:
+        """Interpolate value and return.
+        
+        Parameters
+        ----------
+        val_name: str | list
+            name of value to be interpolated.
+            see the fields specified in self._table_dtype.
+            e.g. 'rho'
+
+        rho, u: np.ndarray
+            density and specific internal energy in cgs units.
+
+        method: str | None
+            Method to be used for interpolation.
+            See scipy.interpolate.RegularGridInterpolator.__call__ docs.
+
+        iverbose: int
+            How much errors, warnings, notes, and debug info to be print on screen.
+
+            
+
+        Note: As described by line 451 of the file phantom/src/main/eos_mesa_microphysics.f90,
+            ! logRho = logV + 0.7*logE - 20
+            Daniel's explanation of it is that
+            "It’s some combination of pressure and density that makes sense only to people who compile equations of state"
+            (2023-11-02 over Slack.)
+            
+        """
+
+        log10_T = np.log10(T)
+        log10_R = np.log10(rho) + 18. - 3 * log10_T
+        _interp_coord = (log10_R, log10_T)
+        
+        return 10**self._interp_dict(_interp_coord, method=method)
+
+
+
+
+
+
+
+
 class EoS_MESA_table:
     """A class to store and handle stored MESA EoS tables from Phantom."""
     def __init__(self, params: dict, settings: Settings, iverbose: int=3):
