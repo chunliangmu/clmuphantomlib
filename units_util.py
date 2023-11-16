@@ -91,11 +91,11 @@ def get_units_field_name(val_name: str) -> str:
         return 'density'
     elif val_name in ['u']:
         return 'specificEnergy'
-    elif val_name in ['T', 'temp', 'temperature', 'Tdust', 'Tgas']:
+    elif val_name in ['T', 'temp', 'temperature', 'Tdust', 'Tgas', 'Teff']:
         return 'temp'
     elif val_name in ['m', 'mass']:
         return 'mass'
-    elif val_name in ['x', 'y', 'z']:
+    elif val_name in ['x', 'y', 'z', 'h']:
         return 'dist'
     elif val_name in ['t', 'time']:
         return 'time'
@@ -103,6 +103,8 @@ def get_units_field_name(val_name: str) -> str:
         return 'speed'
     elif val_name in ['kappa', 'opacity']:
         return 'opacity'
+    elif val_name in ['lum']:
+        return 'lum'
     elif val_name in ['tau', 'opticalDepth']:
         return 'dimless'
     else:
