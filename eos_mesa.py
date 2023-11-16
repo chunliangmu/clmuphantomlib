@@ -34,16 +34,14 @@ from scipy.interpolate import RegularGridInterpolator
 
 
 
-class EoS_MESA_table_opacity:
+class _EoS_MESA_table_opacity:
     """A class to store and handle stored MESA opacity tables from Phantom."""
     def __init__(self, params: dict, settings: Settings, iverbose: int=3):
         self._data_dir    = ""
         self._Z           = np.nan
         self._Z_arr       = np.array([])
-        self._Z_str       = []
         self._X           = np.nan
         self._X_arr       = np.array([])
-        self._X_str       = []
         self._log10_R_arr = np.array([])
         self._log10_T_arr = np.array([])
         self._grid_withZX = ()
@@ -143,7 +141,7 @@ class EoS_MESA_table_opacity:
             see the fields specified in self._table_dtype.
             e.g. 'rho'
 
-        rho, u: np.ndarray
+        rho, T: np.ndarray
             density and specific internal energy in cgs units.
 
         method: str | None
@@ -176,7 +174,86 @@ class EoS_MESA_table_opacity:
 
 
 
-class EoS_MESA_table:
+
+
+
+class EoS_MESA_opacity(_EoS_MESA_table_opacity):
+    """Wrapper for MESA opacity class"""
+
+    # do not define __init__ so the old __init__() from parent class is called
+
+
+    def get_kappa(
+        self,
+        rho: np.ndarray|units.Quantity,
+        T  : np.ndarray|units.Quantity,
+        *params_list,
+        return_as_quantity: bool|None = None,
+        iverbose: int = 3,
+        **params_dict,
+    ) -> np.ndarray|units.Quantity:
+        """Getting specific values from EoS and rho and u.
+
+        See self.get_val_cgs() for more info.
+        
+        Parameters
+        ----------
+        rho, T: np.ndarray | units.Quantity
+            density and specific internal energy
+            if numpy array, WILL ASSUME CGS UNITS.
+            should have same shape.
+
+        return_as_quantity: bool | None
+            if the results should be returned as a astropy.units.Quantity.
+            If None, will only return as that if one of the input rho or u is that.
+            
+        iverbose: int
+            How much errors, warnings, notes, and debug info to be print on screen.
+
+
+        ... and other params specified by specific EoS (see their respective docs.)
+
+
+        Returns
+        -------
+        ans: np.ndarray | units.Quantity
+            calc-ed EoS values.
+        
+        """
+        return_quantity = False
+        if isinstance(rho, units.Quantity):
+            rho = rho.cgs.value
+            return_quantity = True
+        if isinstance(T, units.Quantity):
+            T = T.cgs.value
+            return_quantity = True
+        if return_as_quantity is not None:
+            return_quantity = return_as_quantity
+        
+        ans = self.get_val_cgs(
+            rho, T, *params_list,
+            iverbose=iverbose,
+            **params_dict,
+        )
+
+        if return_quantity:
+            ans = set_as_quantity(ans, get_units_cgs('kappa'))
+        return ans
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class _EoS_MESA_table:
     """A class to store and handle stored MESA EoS tables from Phantom."""
     def __init__(self, params: dict, settings: Settings, iverbose: int=3):
         self._data_dir    = ""
@@ -205,7 +282,7 @@ class EoS_MESA_table:
     
     def __setitem__(self, i, val):
         raise NotImplementedError(
-            "EoS_MESA_table: Please don't try to change things that are not supposed to be changed.")
+            "_EoS_MESA_table: Please don't try to change things that are not supposed to be changed.")
         
     
     def load_mesa_eos_table(self, params: dict, settings: Settings, iverbose: int=3):
@@ -402,13 +479,11 @@ class EoS_MESA_table:
 
 
 
-
-
 class EoS_MESA(EoS_Base):
     """Class for MESA Equation of State Objects."""
     
     def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
-        self.__mesa_table = EoS_MESA_table(params, settings, iverbose)
+        self.__mesa_table = _EoS_MESA_table(params, settings, iverbose)
 
         return
 
