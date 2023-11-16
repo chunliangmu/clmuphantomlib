@@ -17,7 +17,7 @@ from .log import error, warn, note, debug_info
 from .settings   import Settings, DEFAULT_SETTINGS
 from .readwrite  import fortran_read_file_unformatted
 from .eos_base   import EoS_Base
-from .units_util import set_as_quantity, CGS_UNITS
+from .units_util import set_as_quantity, get_units_cgs
 
 #  import (general)
 import os
@@ -230,7 +230,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
         if return_as_quantity is not None:
             return_quantity = return_as_quantity
         
-        ans = self.get_val_cgs(
+        ans = self.get_kappa_cgs(
             rho, T, *params_list,
             iverbose=iverbose,
             **params_dict,
