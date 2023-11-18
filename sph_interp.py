@@ -56,79 +56,61 @@ def _get_sph_interp_phantom_np(
     vals : np.ndarray,
     xyzs : np.ndarray,
     hs   : np.ndarray,
-    kernel_w: numba.core.registry.CPUDispatcher,
+    kernel_w  : numba.core.registry.CPUDispatcher,
+    kernel_rad: float,
     ndim : int = 3,
-    #iverbose : int = 3,
 ) -> np.ndarray:
     """SPH interpolation subprocess.
 
-    WARNING: This func requires a very specific input array shape, and it does NOT do sanity check!
+    WARNING:
+        * This func requires a very specific input array shape, and it does NOT do sanity check!
+        * kernel_rad MUST be float instead of int!
+        * All input numpy array must be in 'C' order (because stupid numba doesn't support 'F' order)
+        * all inputs in locs, xyzs, hs must be finite (no np.inf nor np.nan)
 
     Using numpy array as input and numba for acceleration.
     
-    *** THIS FUNC DOES NOT DO SAINTY CHECK ***
-
-    Note: All input numpy array must be in 'C' order (because stupid numba doesn't support 'F' order)
+    *** THIS FUNC DOES NOT DO SAINTY CHECK *** 
 
 
     Parameters
     ----------
-    locs : (nlocs, 1,  ndim)-shaped np.ndarray,
-    vals : (1, npart, nvals)-shaped np.ndarray,
-    xyzs : (1, npart,  ndim)-shaped np.ndarray,
-    hs   : (1, npart,      )-shaped np.ndarray,
-    kernel_w: sarracen.kernels.BaseKernel.w
+    locs : (nlocs, ndim )-shaped np.ndarray,
+    vals : (npart, nvals)-shaped np.ndarray,
+    xyzs : (npart, ndim )-shaped np.ndarray,
+    hs   : (npart,      )-shaped np.ndarray,
+    kernel_w  : sarracen.kernels.BaseKernel.w
+    kernel_rad: float
+        smoothing kernel radius in unit of h (outside this w goes to 0)
     ndim : int = 3
     
     Returns
     -------
-    ans: (nlocs,) or (nlocs, nvals)-shaped np.ndarray
-        The dimension of the array should match vals.
-        i.e. if vals is (npart, )-shaped, then (,) or (nlocs,)-shaped array will be returned;
-        if vals is (npart, nvals)-shaped, then (nlocs,  nvals)-shaped array will be returned.
+    ans  : (nlocs, nvals)-shaped np.ndarray
     """
+    nlocs = locs.shape[0]
+    npart = vals.shape[0]
+    nvals = vals.shape[1]
+    ans_s = np.zeros((nlocs, nvals), dtype=vals.dtype)
+    ans_w = np.zeros((nlocs, 1))
 
-    # dist2: (nlocs, npart)-shaped np.ndarray
-    dist2 = np.sum((xyzs - locs)**2, axis=-1)
-    # qs : (nlocs, npart)-shaped array
-    qs = dist2**0.5 / hs
-    # w_q: (nlocs, npart, 1)-shaped array
-    w_q = np.expand_dims(kernel_w(qs, ndim), 2) # [:, :, np.newaxis]
-    # ans: (nlocs, nvals)-shaped array
-    ans = np.sum(vals * w_q, axis=1) / np.sum(w_q, axis=1)
-    return ans
+    # h * w_rad
+    hw_rad = kernel_rad * hs
+
+    for j in range(npart):
+        # pre-select
+        maybe_neigh = np.abs(locs - xyzs[j][np.newaxis, :]) < hw_rad[j]
+        for i in range(nlocs):
+            if np.all(maybe_neigh[i]):
+                q_ij = np.sum((locs[i] - xyzs[j])**2)**0.5 / hs[j]
+                if q_ij <= kernel_rad:
+                    w_q = kernel_w(q_ij, ndim)
+                    ans_s[i   ] += w_q * vals[j]
+                    ans_w[i, 0] += w_q
+    return ans_s / ans_w
 
 
 
-
-
-"""
-    # calc
-    if locs.ndim == 1:
-        loc = locs
-        if len(loc) != ndim:
-            raise ValueError(f"{loc.shape=} is not (3)")
-            
-        qs = np.sum((xyzs - loc)**2, axis=-1)**0.5 / hs
-        ans = np.sum(mA_div_rhoh3 * kernel.w(qs, ndim))
-        return ans
-    elif locs.ndim == 2:
-        if locs.shape[-1] != ndim:
-            raise ValueError(f"{loc.shape=} is not (..., {ndim})")
-            
-        ans_shape = (*locs.shape[:-1], *vals.shape[1:])
-        ans = np.full(ans_shape, np.nan, dtype=vals.dtype)
-        # non-zero range of the kernel
-        r2_range = (kernel_radius * hs)**2
-        for i, loc in enumerate(locs):
-            r2s = np.sum((xyzs - loc)**2, axis=-1)
-            indexs = r2s < r2_range
-            qs_sliced = r2s[indexs]**0.5 / hs[indexs]
-            ans[i] = np.sum(mA_div_rhoh3[indexs] * kernel.w(qs_sliced, ndim))
-        return ans
-    else:
-        raise NotImplementedError(f"locs.ndim={locs.ndim} higher than 2 is not implemented")
-"""
 
 
 
@@ -217,13 +199,13 @@ def get_sph_interp_phantom(
     npart = len(sdf)
     if kernel is None:
         kernel = sdf.kernel
-    kernel_radius = kernel.get_radius()
+    kernel_rad = float(kernel.get_radius())
     #if hfact is None:
     #    hfact = float(sdf.params['hfact'])
     locs = np.array(locs, copy=False, order='C')
     vals = np.array(sdf[val_names], copy=False, order='C')
     xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
-    hs   = np.array(sdf['h'], copy=False, order='C')                # npart-shaped array
+    hs   = np.array(sdf['h'], copy=False, order='C')                # (npart,)-shaped array
 
     
     # fix input shapes
@@ -235,11 +217,6 @@ def get_sph_interp_phantom(
         do_squeeze = True
     if xyzs.ndim == 1:
         xyzs = xyzs[:, np.newaxis]
-
-    vals = vals[np.newaxis, :, :] # (1, npart, nvals)-shaped
-    locs = locs[:, np.newaxis, :] # (nlocs, 1, ndim)-shaped
-    xyzs = xyzs[np.newaxis, :, :] # (1, npart, ndim)-shaped
-    hs   = hs[  np.newaxis, :]    # (1, npart,)-shaped
 
     
     # sanity checks
@@ -258,7 +235,7 @@ def get_sph_interp_phantom(
             "if the simulation is 3D, this means that the following calculations will be wrong.",
             "Are you sure you know what you are doing?",
         )
-    if xyzs.shape != (1, npart, ndim):
+    if xyzs.shape != (npart, ndim):
         warn(
             'get_sph_interp()', iverbose,
             f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
@@ -268,7 +245,7 @@ def get_sph_interp_phantom(
 
 
     # calc
-    ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, ndim)
+    ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, kernel_rad, ndim)
     
     if do_squeeze:
         ans = np.squeeze(ans)
