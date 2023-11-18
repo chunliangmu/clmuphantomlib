@@ -160,7 +160,7 @@ def get_photosphere_on_ray(
 
     Returns
     -------
-    photosphere, waypts_list = (pts_waypts, pts_waypts_t, taus_waypts)
+    photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
 
     photosphere: dict
         dict of values found at the photosphere intersection point with the ray.
@@ -294,6 +294,6 @@ def get_photosphere_on_ray(
                 # which will raise a Value Error
                 photosphere['T'] = np.nan
         else:
-            # just interpolate it
+            # just interpolate it (#IT JUST WORKS)
             photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], iverbose=iverbose)
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
