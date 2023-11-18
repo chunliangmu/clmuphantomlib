@@ -234,8 +234,14 @@ def get_photosphere_on_ray(
         
 
     # prepare answers
+    # is found?
+    if np.isfinite(taus_waypts[-1]):
+        # in case there is nan in the later part of the array
+        taus_max = taus_waypts[-1]
+    else:
+        taus_max = np.nanmax(taus_waypts)
     photosphere = {
-        'is_found': (taus_waypts[-1] > photosphere_tau),
+        'is_found': (taus_max > photosphere_tau)
     }
     
     # get photosphere
