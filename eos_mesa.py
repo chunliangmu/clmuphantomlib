@@ -119,17 +119,23 @@ class _EoS_MESA_table_opacity:
                 self._grid_withZX, self._table_withZX, method='linear',
             )(meshgrid_noZX_coord)
 
-            self._interp = RegularGridInterpolator(self._grid_noZX, self._table_noZX, method='linear', bounds_error=False)
+            self._interp = RegularGridInterpolator(
+                self._grid_noZX, self._table_noZX, method='linear', bounds_error=False, fill_value=None)
+            self._interp_no_extrap = RegularGridInterpolator(
+                self._grid_noZX, self._table_noZX, method='linear', bounds_error=False, fill_value=np.nan)
             # derivatives- ignored
         return self
 
+
+    
     def get_kappa_cgs(
         self,
         rho: np.ndarray,
         T  : np.ndarray,
         *params_list,
-        method  : str|None = None,
-        iverbose: int = 3,
+        method   : str|None = None,
+        do_extrap: bool = True,
+        iverbose : int  = 3,
         **params_dict,
     ) -> np.ndarray:
         """Interpolate value and return.
@@ -148,6 +154,11 @@ class _EoS_MESA_table_opacity:
             Method to be used for interpolation.
             See scipy.interpolate.RegularGridInterpolator.__call__ docs.
 
+        do_extrap: bool
+            If true, will extrapolate
+            otherwise, will return nan when out of bounds
+            *** Note: There will be NO WARNINGS if True! ***
+
         iverbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
@@ -165,7 +176,12 @@ class _EoS_MESA_table_opacity:
         log10_R = np.log10(rho) + 18. - 3. * log10_T
         _interp_coord = (log10_R, log10_T)
         
-        return 10**self._interp(_interp_coord, method=method)
+        if do_extrap:
+            _interp = self._interp
+        else:
+            _interp = self._interp_no_extrap
+        
+        return 10**_interp(_interp_coord, method=method)
 
 
 
@@ -194,7 +210,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
     ) -> np.ndarray|units.Quantity:
         """Getting specific values from EoS and rho and u.
 
-        See self.get_val_cgs() for more info.
+        See self.get_val_cgs() for full details of possible parameters.
         
         Parameters
         ----------
