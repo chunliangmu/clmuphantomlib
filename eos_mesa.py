@@ -49,7 +49,7 @@ class _EoS_MESA_table_opacity:
         self._grid_noZX   = ()
         self._table_noZX  = np.array([])
         self._table_dtype = []
-        self._interp_dict = {}
+        self._interp      = None
         
         self.load_mesa_table(params, settings, iverbose=iverbose)
         return
@@ -119,7 +119,7 @@ class _EoS_MESA_table_opacity:
                 self._grid_withZX, self._table_withZX, method='linear',
             )(meshgrid_noZX_coord)
 
-            self._interp_dict = RegularGridInterpolator(self._grid_noZX, self._table_noZX, method='linear', bounds_error=False)
+            self._interp = RegularGridInterpolator(self._grid_noZX, self._table_noZX, method='linear', bounds_error=False)
             # derivatives- ignored
         return self
 
@@ -165,7 +165,7 @@ class _EoS_MESA_table_opacity:
         log10_R = np.log10(rho) + 18. - 3 * log10_T
         _interp_coord = (log10_R, log10_T)
         
-        return 10**self._interp_dict(_interp_coord, method=method)
+        return 10**self._interp(_interp_coord, method=method)
 
 
 
