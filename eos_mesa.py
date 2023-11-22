@@ -162,7 +162,7 @@ class _EoS_MESA_table_opacity:
         """
 
         log10_T = np.log10(T)
-        log10_R = np.log10(rho) + 18. - 3 * log10_T
+        log10_R = np.log10(rho) + 18. - 3. * log10_T
         _interp_coord = (log10_R, log10_T)
         
         return 10**self._interp(_interp_coord, method=method)
