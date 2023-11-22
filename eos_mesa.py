@@ -134,7 +134,7 @@ class _EoS_MESA_table_opacity:
         T  : np.ndarray,
         *params_list,
         method   : str|None = None,
-        do_extrap: bool = True,
+        do_extrap: bool = False,
         iverbose : int  = 3,
         **params_dict,
     ) -> np.ndarray:
