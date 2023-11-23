@@ -165,7 +165,7 @@ def get_sph_close_pts_indices(
 def get_temp_from_u(
     rho, u, mu, ieos:int,
     rho_unit=None, u_unit=None,
-    iverbose: int = 0,
+    verbose: int = 0,
 ) -> np.ndarray:
     """Calculate temperature from internal energy, assuming it being a mix of gas & radiation pressure (only if ieos!=2).
     
@@ -208,8 +208,8 @@ def get_temp_from_u(
     # Constants & inputs in cgs units
     
     if mu is None or (issubclass(type(mu), str) and mu == 'adapt'):
-        temp_ionized    = get_temp_from_u(rho, u, 0.6     , ieos, rho_unit=rho_unit, u_unit=u_unit, iverbose=iverbose,)
-        temp_recombined = get_temp_from_u(rho, u, 2.380981, ieos, rho_unit=rho_unit, u_unit=u_unit, iverbose=iverbose,)
+        temp_ionized    = get_temp_from_u(rho, u, 0.6     , ieos, rho_unit=rho_unit, u_unit=u_unit, verbose=verbose,)
+        temp_recombined = get_temp_from_u(rho, u, 2.380981, ieos, rho_unit=rho_unit, u_unit=u_unit, verbose=verbose,)
         temp = np.where(
             np.logical_and(temp_ionized > 10000., temp_recombined > 6000.),
             temp_ionized,
@@ -219,7 +219,7 @@ def get_temp_from_u(
                 np.nan
             )
         )
-        note("get_temp_from_u()", iverbose,
+        note("get_temp_from_u()", verbose,
              f"Using average temp for {np.count_nonzero(np.isnan(temp))} out of {len(temp)} particles.\n" + \
              f"                   {np.count_nonzero(np.logical_and(temp_ionized > 10000., temp_recombined < 6000.))}" + \
              "out of which are contradicting each other (T > 10000K if mu=0.6, T < 6000K if mu=2.38)"
@@ -292,8 +292,8 @@ def get_temp_from_u(
             temp = temp + dt
 
         else:
-            warn('get_temp_from_u()', iverbose, f"temperature not converging- max rtol = {np.max(abs(dt/temp))}")
-        note('get_temp_from_u()', iverbose, f"max rtol = {np.max(abs(dt/temp))} after {i} iters.")
+            warn('get_temp_from_u()', verbose, f"temperature not converging- max rtol = {np.max(abs(dt/temp))}")
+        note('get_temp_from_u()', verbose, f"max rtol = {np.max(abs(dt/temp))} after {i} iters.")
     else:
         raise TypeError(f"Unexpected dimension of input data rho & u:\n{rho=}\n{u=}")
     return temp
@@ -458,7 +458,7 @@ def get_opacity_dust_bowen1988(Teq, kmax, Tcond, delta, kappa_gas=0.*(units.cm**
 class MyPhantomDataFrames:
     """An object using Sarracen data frames to deal with Phantom outputs."""
     
-    def __init__(self, print_debug=False):
+    def __init__(self, verbose=False):
         self.sdfs = ()
         self.data = {}
         self.job_name = ''
@@ -473,10 +473,10 @@ class MyPhantomDataFrames:
         #self.i_star1 = np.nan    # index of the primary star in self.data['sink']
         self.units = DEFAULT_UNITS # dict of astropy quantities, with keys ['mass', 'dist', 'time']
         self.const = {}    # constants values in self.units
-        self._update_units(print_debug=print_debug)
+        self._update_units(verbose=verbose)
 
         
-    def _update_units(self, print_debug=False):
+    def _update_units(self, verbose=False):
         """Update self.units based on mass, dist, time, & temp in self.units"""
         self.units['speed'] = self.units['dist'] / self.units['time']
         self.units['energy'] = self.units['mass'] * self.units['speed']**2
@@ -490,7 +490,7 @@ class MyPhantomDataFrames:
         
         self.const['G'] = const.G.to_value(self.units['G'])
         self.const['sigma_sb'] = const.sigma_sb.to_value(self.units['sigma_sb'])
-        if print_debug:
+        if verbose:
             print(
                 f"{self.units=}\n",
                 f"G={self.const['G']} {self.units['G']}\n",  #{const.G.to(self.units['G'])}
@@ -514,8 +514,7 @@ class MyPhantomDataFrames:
         calc_params_params : dict = {},
         reset_xyz_by_CoM : bool = False,
         reset_xyz_by : str = "",
-        print_debug : bool = False,
-        iverbose : int = 0,
+        verbose : int = 0,
     ):
         """
         Read phantom data.
@@ -544,11 +543,8 @@ class MyPhantomDataFrames:
             acceptable input:
                 "CoM": Center of Mass
                 "R1" or "primary": primary star (i.e. first entry in sink, a.k.a. data['sink'].iloc[0])
-        
-        print_debug: bool (deprecated)
-            whether or not to print debug info.
 
-        iverbose: int
+        verbose: int
             How much warnings, notes, and debug info to be print on screen. 
             
         Returns self.
@@ -560,14 +556,11 @@ class MyPhantomDataFrames:
         elif len(self.job_name) > 0:
             pass
         else:
-            warn('MyPhantomDataFrames.read()', iverbose, f"Read failed- please supply job_name")
+            warn('MyPhantomDataFrames.read()', verbose, f"Read failed- please supply job_name")
             return self
         self.job_index = job_index
         filename = self.get_filename()
-        if print_debug:
-            # print_debug is deprecated.
-            iverbose = 99
-        note('MyPhantomDataFrames.read()', iverbose, f"Reading {filename=}")
+        note('MyPhantomDataFrames.read()', verbose, f"Reading {filename=}")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
@@ -598,13 +591,13 @@ class MyPhantomDataFrames:
             'temp': units.K,
         }
         self._update_units()
-        if iverbose >= 4:
+        if verbose >= 4:
             debug_info_text = "\n"
             for i in ['dist', 'mass', 'time']:
                 debug_info_text += f"\t{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}\n"
             debug_info_text += f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }\n"
             debug_info_text += f"Center of mass location: {self.loc_CoM = }\n"
-            debug_info('MyPhantomDataFrames.read()', iverbose, debug_info_text)
+            debug_info('MyPhantomDataFrames.read()', verbose, debug_info_text)
 
                     
         if reset_xyz_by_CoM:
@@ -613,7 +606,7 @@ class MyPhantomDataFrames:
         if not reset_xyz_by:
             if get_r_from_loc(self.loc_CoM) > 1:
                 warn(
-                    'MyPhantomDataFrames.read()', iverbose,
+                    'MyPhantomDataFrames.read()', verbose,
                     "*    Warning: CoM significantly deviates from the origin," + \
                     f"with distance of {get_r_from_loc(self.loc_CoM)}" + \
                     "Consider use reset_xyz_by_CoM=True option when read."
@@ -625,7 +618,7 @@ class MyPhantomDataFrames:
             elif reset_xyz_by in ["R1", "primary"]:
                 reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
                 
-            if iverbose >= 2: print(f"*   Note: Reseting Origin to {reset_xyz_by}...")
+            if verbose >= 2: print(f"*   Note: Reseting Origin to {reset_xyz_by}...")
             
             for sdf in self.sdfs:
                 sdf['x'] -= reset_xyz_by_arr[0]
@@ -633,8 +626,8 @@ class MyPhantomDataFrames:
                 sdf['z'] -= reset_xyz_by_arr[2]
             self.loc_CoM = self.get_loc_CoM()
             
-            if iverbose >= 2: print(f"    Note: CoM location is now: {self.loc_CoM = }")
-            if iverbose and reset_xyz_by == "CoM" and get_r_from_loc(self.loc_CoM) > 1e-5:
+            if verbose >= 2: print(f"    Note: CoM location is now: {self.loc_CoM = }")
+            if verbose and reset_xyz_by == "CoM" and get_r_from_loc(self.loc_CoM) > 1e-5:
                 print(f"*   Warning: CoM is not close to origin {get_r_from_loc(self.loc_CoM) = }")
 
         
@@ -647,7 +640,7 @@ class MyPhantomDataFrames:
                         do_warn = False
             # warn
             if do_warn:
-                warn('MyPhantomDataFrames.read()', iverbose,
+                warn('MyPhantomDataFrames.read()', verbose,
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=}",
                     "However in phantom kappa is often (?) assumed to be in cgs unit.",
@@ -659,7 +652,7 @@ class MyPhantomDataFrames:
 
             
         # calculate additional params
-        self.calc_sdf_params(calc_params=calc_params, calc_params_params=calc_params_params, iverbose=iverbose)
+        self.calc_sdf_params(calc_params=calc_params, calc_params_params=calc_params_params, verbose=verbose)
         
         return self
     
@@ -672,8 +665,7 @@ class MyPhantomDataFrames:
             'overwrite': False,
             'kappa_translate_from_cgs_units': False,
         },
-        print_debug : bool = False,
-        iverbose : int = 0,
+        verbose : int = 0,
     ):
         """
         Calculate density, mass, velocity, and more for self.data['gas'].
@@ -703,20 +695,12 @@ class MyPhantomDataFrames:
                         and attempt to translate its unit into the (correct) phantom units.
                         Won't do anything is 'kappa' column not present.
 
-        print_debug: bool (deprecated)
-            whether or not to print debug info.
-
-        iverbose: int
+        verbose: int
             How much warnings, notes, and debug info to be print on screen. 
             
         
         Returns self.
         """
-
-        if print_debug:
-            # print_debug is deprecated.
-            iverbose = 99
-
         
         sdf = self.data['gas']
         
@@ -738,7 +722,7 @@ class MyPhantomDataFrames:
         if 'rho' not in sdf.columns:
             sdf.calc_density()
         else:
-            if iverbose >= 2: print(f"    Note: Density column rho already exist in {self.time = }.")
+            if verbose >= 2: print(f"    Note: Density column rho already exist in {self.time = }.")
                 
         # get speed if velocity presents
         if all([key in sdf.columns for key in ('vx', 'vy', 'vz')]):
@@ -751,14 +735,14 @@ class MyPhantomDataFrames:
             do_this = True
             if 'T' in sdf.columns and np.any(sdf['T']):
                 if overwrite:
-                    if iverbose >= 1: print(f"**  Warning: Overwriting non-zero temperature column 'T' already in the datafile.")
+                    if verbose >= 1: print(f"**  Warning: Overwriting non-zero temperature column 'T' already in the datafile.")
                 else:
                     do_this = False
-                    if iverbose >= 2: print(f"*   Note: non-zero temperature column 'T' already in the datafile. Calc Cancelled.")
+                    if verbose >= 2: print(f"*   Note: non-zero temperature column 'T' already in the datafile. Calc Cancelled.")
             elif 'temperature' in sdf.columns and np.any(sdf['temperature']):
                 sdf['T'] = sdf['temperature']
                 do_this = False
-                if iverbose >= 2: print(f"*   Note: Using non-zero temperature column 'temperature' as 'T' column.")
+                if verbose >= 2: print(f"*   Note: Using non-zero temperature column 'temperature' as 'T' column.")
             if 'u' not in sdf.columns:
                 raise ValueError(f"No column for specific internal energy u found in {sdf.columns = }")
             if 'mu' in calc_params_params.keys():
@@ -770,13 +754,13 @@ class MyPhantomDataFrames:
                     mu = None
                     
             if do_this:
-                if iverbose >= 3: print(f"    Info: Using {ieos= } for temperature calc.")
+                if verbose >= 3: print(f"    Info: Using {ieos= } for temperature calc.")
                 # calc T
                 sdf['T'] = get_temp_from_u(
                     rho= sdf['rho'], rho_unit= self.units['density'],
                     u  = sdf['u']  ,   u_unit= self.units['specificEnergy'],
                     mu = mu, ieos = ieos,
-                    print_debug=print_debug,
+                    verbose=verbose,
                 )
         
         
@@ -792,12 +776,12 @@ class MyPhantomDataFrames:
                 if kappa_translate_from_cgs_units:
                     do_this = False
                     sdf['kappa'] = set_as_quantity(sdf['kappa'], units.cm**2/units.g).to_value(self.units['opacity'])
-                    if iverbose >= 2: print(f" Translating kappa from cgs units to phantom units {self.units['opacity'].cgs =}")
+                    if verbose >= 2: print(f" Translating kappa from cgs units to phantom units {self.units['opacity'].cgs =}")
                 elif overwrite:
-                    if iverbose >= 1: print(f"**  Warning: Overwriting non-zero opacity column 'kappa' already in the datafile.")
+                    if verbose >= 1: print(f"**  Warning: Overwriting non-zero opacity column 'kappa' already in the datafile.")
                 else:
                     do_this = False
-                    if iverbose >= 2: print(f"*   Note: non-zero opacity column 'kappa' already in the datafile. Calc Cancelled.")
+                    if verbose >= 2: print(f"*   Note: non-zero opacity column 'kappa' already in the datafile. Calc Cancelled.")
             if do_this:
                 if 'T' not in sdf.columns:
                     raise ValueError(f"No column for temperature 'T' found in {sdf.columns = }. Try calc 'T' as well?")
@@ -819,10 +803,10 @@ class MyPhantomDataFrames:
             do_this = True
             if 'P' in sdf.columns and np.any(sdf['P']):
                 if overwrite:
-                    if iverbose >= 1: print(f"**  Warning: Overwriting non-zero pressure column 'P' already in the datafile.")
+                    if verbose >= 1: print(f"**  Warning: Overwriting non-zero pressure column 'P' already in the datafile.")
                 else:
                     do_this = False
-                    if iverbose >= 2: print(f"*   Note: non-zero pressure column 'P' already in the datafile. Calc Cancelled.")
+                    if verbose >= 2: print(f"*   Note: non-zero pressure column 'P' already in the datafile. Calc Cancelled.")
             if do_this:
                 if ieos == 2:
                     # adiabatic (or polytropic - *** not implemented!!!) eos
@@ -836,12 +820,12 @@ class MyPhantomDataFrames:
                     # mesa eos
                     sdf['P'] = sdf['pressure']
                 else:
-                    if iverbose >= 1: print(f"*   Warning: Unrecognizaed ieos when calc P: {ieos = } !")
+                    if verbose >= 1: print(f"*   Warning: Unrecognizaed ieos when calc P: {ieos = } !")
             # sanity check
             if any(sdf['P'] <= 0):
-                if iverbose >= 1: print(f"*   Warning: In {self.time = } there exists non-positive pressure!")
+                if verbose >= 1: print(f"*   Warning: In {self.time = } there exists non-positive pressure!")
             else:
-                if iverbose >= 2: print(f"    Note: All pressure in {self.time = } are positive.")
+                if verbose >= 2: print(f"    Note: All pressure in {self.time = } are positive.")
                     
             # get sound speed & mach number
             if overwrite or 'c_s' not in sdf.columns:
@@ -892,7 +876,7 @@ class MyPhantomDataFrames:
             total_mass = self.total_mass
         return np.sum([[(sdf[axis]*sdf['m']).sum() for axis in 'xyz'] for sdf in self.sdfs], axis=0) / total_mass
     
-    def get_orb_sep(self, unit=DEFAULT_UNITS['dist'], iverbose:int=3) -> units.Quantity:
+    def get_orb_sep(self, unit=DEFAULT_UNITS['dist'], verbose:int=3) -> units.Quantity:
         """
         Get orbital separation between the two sink particles.
         
@@ -907,12 +891,12 @@ class MyPhantomDataFrames:
         if len(self.data['sink']) != 2:
             if len(self.data['sink']) <= 1:
                 error(
-                    'MyPhantomDataFrames.get_orb_sep()', iverbose,
+                    'MyPhantomDataFrames.get_orb_sep()', verbose,
                     f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
                 return np.nan
             else:
                 warn(
-                    'MyPhantomDataFrames.get_orb_sep()', iverbose,
+                    'MyPhantomDataFrames.get_orb_sep()', verbose,
                     f"In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
         # calc
         sinks = self.data['sink']
@@ -1097,7 +1081,7 @@ def plot_mpdf_movies_xsec(
     norm=mpl.colors.LogNorm(vmin=None, vmax=None, clip=True),
     unit_time=units.year, unit_time_print_utime_too=False,
     fps=20,
-    debug_verbose=1,
+    verbose=1,
     **kwargs
 ):
     """
@@ -1161,7 +1145,7 @@ def plot_mpdf_movies_xsec(
     fps: int
         fps for the movie.
         
-    debug_verbose: int
+    verbose: int
         how verbose should this func be. 0~2.
         
     **kwargs: other keyword arguments
@@ -1177,12 +1161,9 @@ def plot_mpdf_movies_xsec(
     # init
     
     print_progress = False
-    print_debug = False
-    if debug_verbose >= 1:
+    if verbose >= 1:
         print_progress = True
         print("Working on:")
-    if debug_verbose >= 2:
-        print_debug = True
     if file_range is not None:
         file_indexes = range(*file_range)
 
@@ -1200,7 +1181,7 @@ def plot_mpdf_movies_xsec(
         
         fig, ax = plt.subplots(figsize=figsize)
 
-        mpdf.read(job_name, i, print_debug=print_debug, **mpdf_read_kwargs)
+        mpdf.read(job_name, i, verbose=verbose, **mpdf_read_kwargs)
         sdf = mpdf.data['gas']
         
         # calculate rendered par
@@ -1309,12 +1290,12 @@ if __name__ == '__main__':
     #PLOT_TITLE_SUFFIX = ""
 
     moviefilenames = {}
-    mpdf = MyPhantomDataFrames(print_debug=True)
+    mpdf = MyPhantomDataFrames(verbose=True)
     mpdf.read(
         JOB_NAME, FILE_RANGE[1]-1,
         calc_params=['T', 'P', 'R1'],
         calc_params_params={'mu': None,},
-        print_debug=True,
+        verbose=True,
     )
     fig, ax = mpdf.plot_render()
 
@@ -1357,7 +1338,7 @@ if __name__ == '__main__':
 #         norm=mpl.colors.LogNorm(vmin=1e-30, vmax=1e-6, clip=True),
 #         unit_time=units.year, unit_time_print_utime_too=False,
 #         fps=1,
-#         debug_verbose=1,
+#         verbose=1,
 #     )
 
 # if __name__ == '__main__':
@@ -1371,7 +1352,7 @@ if __name__ == '__main__':
 #         norm=mpl.colors.LogNorm(vmin=1e-4, vmax=BOWEN_KMAX.value, clip=True),
 #         unit_time=units.year, unit_time_print_utime_too=False,
 #         fps=1,
-#         debug_verbose=1,
+#         verbose=1,
 #     )
 
 # if __name__ == '__main__':
@@ -1394,7 +1375,7 @@ if __name__ == '__main__':
 #         norm=mpl.colors.LogNorm(vmin=1e-14, vmax=1e-6, clip=True),
 #         unit_time=units.year, unit_time_print_utime_too=False,
 #         fps=20,
-#         debug_verbose=1,
+#         verbose=1,
 #     )
 
 # if __name__ == '__main__':
@@ -1408,7 +1389,7 @@ if __name__ == '__main__':
 #         mpdf.read(
 #             JOB_NAME, 0000,
 #             calc_params=['T'],
-#             print_debug=True,
+#             verbose=True,
 #         )
 #         use_idealgas_temperature = True
 #         mu=0.6
@@ -1427,7 +1408,7 @@ if __name__ == '__main__':
         JOB_NAME, 0000,
         calc_params=['T', 'kappa'],
         calc_params_params={'ieos':10., 'X':0.686, 'overwrite':False, 'kappa_translate_from_cgs_units':True},
-        print_debug=True,
+        verbose=True,
     )
     use_idealgas_temperature = False
     #mu=0.6

@@ -124,7 +124,7 @@ def get_sph_interp_phantom(
     #hfact    : float = None,
     ndim     : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
-    iverbose : int = 3,
+    verbose : int = 3,
 ) -> np.ndarray:
     """SPH interpolation.
 
@@ -185,7 +185,7 @@ def get_sph_interp_phantom(
         list of names of the columns that represents x, y, z axes (i.e. coord axes names)
         Make sure to change this if your ndim is something other than 3.
 
-    iverbose: int
+    verbose: int
         How much warnings, notes, and debug info to be print on screen. 
         
     Returns
@@ -224,20 +224,20 @@ def get_sph_interp_phantom(
     # warn if try to interp unexpected quantities
     if val_names not in ['rho', 'u', 'vx', 'vy', 'vz']:
         warn(
-            'get_sph_interp()', iverbose,
+            'get_sph_interp()', verbose,
             "Kernel interpolation should be used with conserved quantities (density, energy, momentum),",
             f"but you are trying to do it with '{val_names}', which could lead to problematic results."
         )
     if ndim != 3:
         warn(
-            'get_sph_interp()', iverbose,
+            'get_sph_interp()', verbose,
             f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
             "if the simulation is 3D, this means that the following calculations will be wrong.",
             "Are you sure you know what you are doing?",
         )
     if xyzs.shape != (npart, ndim):
         warn(
-            'get_sph_interp()', iverbose,
+            'get_sph_interp()', verbose,
             f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
             "This is not supposed to happen and means that the following calculations will be wrong.",
             "Please check input to this function.",

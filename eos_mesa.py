@@ -36,7 +36,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 class _EoS_MESA_table_opacity:
     """A class to store and handle stored MESA opacity tables from Phantom."""
-    def __init__(self, params: dict, settings: Settings, iverbose: int=3):
+    def __init__(self, params: dict, settings: Settings, verbose: int=3):
         self._data_dir    = ""
         self._Z           = np.nan
         self._Z_arr       = np.array([])
@@ -51,11 +51,11 @@ class _EoS_MESA_table_opacity:
         self._table_dtype = []
         self._interp      = None
         
-        self.load_mesa_table(params, settings, iverbose=iverbose)
+        self.load_mesa_table(params, settings, verbose=verbose)
         return
 
     
-    def load_mesa_table(self, params: dict, settings: Settings, iverbose: int=3):
+    def load_mesa_table(self, params: dict, settings: Settings, verbose: int=3):
         """Load MESA table.
     
         Assuming mesa EoS table stored in directory settings['EoS_MESA_DATA_DIR'].
@@ -135,7 +135,7 @@ class _EoS_MESA_table_opacity:
         *params_list,
         method   : str|None = None,
         do_extrap: bool = False,
-        iverbose : int  = 3,
+        verbose : int  = 3,
         **params_dict,
     ) -> np.ndarray:
         """Interpolate value and return.
@@ -159,7 +159,7 @@ class _EoS_MESA_table_opacity:
             otherwise, will return nan when out of bounds
             *** Note: There will be NO WARNINGS if True! ***
 
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
             
@@ -205,7 +205,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
         T  : np.ndarray|units.Quantity,
         *params_list,
         return_as_quantity: bool|None = None,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict,
     ) -> np.ndarray|units.Quantity:
         """Getting specific values from EoS and rho and u.
@@ -223,7 +223,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
             if the results should be returned as a astropy.units.Quantity.
             If None, will only return as that if one of the input rho or u is that.
             
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
 
@@ -248,7 +248,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
         
         ans = self.get_kappa_cgs(
             rho, T, *params_list,
-            iverbose=iverbose,
+            verbose=verbose,
             **params_dict,
         )
 
@@ -271,7 +271,7 @@ class EoS_MESA_opacity(_EoS_MESA_table_opacity):
 
 class _EoS_MESA_table:
     """A class to store and handle stored MESA EoS tables from Phantom."""
-    def __init__(self, params: dict, settings: Settings, iverbose: int=3):
+    def __init__(self, params: dict, settings: Settings, verbose: int=3):
         self._data_dir    = ""
         self._Z           = np.nan
         self._Z_arr       = np.array([])
@@ -288,7 +288,7 @@ class _EoS_MESA_table:
         self._table_dtype = []
         self._interp_dict = {}
         
-        self.load_mesa_eos_table(params, settings, iverbose=iverbose)
+        self.load_mesa_eos_table(params, settings, verbose=verbose)
         return
 
     
@@ -301,7 +301,7 @@ class _EoS_MESA_table:
             "_EoS_MESA_table: Please don't try to change things that are not supposed to be changed.")
         
     
-    def load_mesa_eos_table(self, params: dict, settings: Settings, iverbose: int=3):
+    def load_mesa_eos_table(self, params: dict, settings: Settings, verbose: int=3):
         """Load MESA table.
     
         Assuming mesa EoS table stored in directory settings['EoS_MESA_DATA_DIR'].
@@ -354,14 +354,14 @@ class _EoS_MESA_table:
             # sanity check
             if f'{Z_float:.2f}' != Z_str:
                 warn(
-                    '_load_mesa_eos_table()', iverbose,
+                    '_load_mesa_eos_table()', verbose,
                     f"{Z_float=} is not the same as {Z_str=}.",
                 )
             for i_X, X_float, X_str in zip(range(no_X), self._X_arr, self._X_str):
                 # sanity check
                 if f'{X_float:.2f}' != X_str:
                     warn(
-                        '_load_mesa_eos_table()', iverbose,
+                        '_load_mesa_eos_table()', verbose,
                         f"{X_float} is not the same as {X_str=}.",
                     )
                 with open(f"{self._data_dir}{os.path.sep}output_DE_z{Z_str}x{X_str}.bindata", 'rb') as f:
@@ -374,7 +374,7 @@ class _EoS_MESA_table:
                         self._log10_V_arr = logV_float
                     elif not np.allclose(self._log10_V_arr, logV_float):
                         warn(
-                            '_load_mesa_eos_table()', iverbose,
+                            '_load_mesa_eos_table()', verbose,
                             "Warning: logV array not the same across the data files.",
                             "This is not supposed to happen! Check the code and the data!",
                         )
@@ -384,7 +384,7 @@ class _EoS_MESA_table:
                         self._log10_E_arr = logE_float
                     elif not np.allclose(self._log10_E_arr, logE_float):
                         warn(
-                            '_load_mesa_eos_table()', iverbose,
+                            '_load_mesa_eos_table()', verbose,
                             "Warning: logE array not the same across the data files.",
                             "This is not supposed to happen! Check the code and the data!",
                         )
@@ -434,7 +434,7 @@ class _EoS_MESA_table:
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
         """Interpolate value and return.
@@ -453,7 +453,7 @@ class _EoS_MESA_table:
             Method to be used for interpolation.
             See scipy.interpolate.RegularGridInterpolator.__call__ docs.
 
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
             
@@ -498,8 +498,8 @@ class _EoS_MESA_table:
 class EoS_MESA(EoS_Base):
     """Class for MESA Equation of State Objects."""
     
-    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
-        self.__mesa_table = _EoS_MESA_table(params, settings, iverbose)
+    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, verbose: int=3):
+        self.__mesa_table = _EoS_MESA_table(params, settings, verbose)
 
         return
 
@@ -511,7 +511,7 @@ class EoS_MESA(EoS_Base):
         u  : np.ndarray,
         *params_list,
         method  : str|None = None,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
         """Getting specific values from EoS and rho and u in cgs units.
@@ -531,7 +531,7 @@ class EoS_MESA(EoS_Base):
             if the results should be returned as a astropy.units.Quantity.
             If None, will only return as that if one of the input rho or u is that.
             
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
 
@@ -543,10 +543,10 @@ class EoS_MESA(EoS_Base):
         ans: np.ndarray | units.Quantity
             calc-ed EoS values.
         """
-        debug_info("EoS_MESA.get_val_cgs()", iverbose, "Calling this.")
+        debug_info("EoS_MESA.get_val_cgs()", verbose, "Calling this.")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
-            method=method, iverbose=iverbose,
+            method=method, verbose=verbose,
             **params_dict,
         )
 
