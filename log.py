@@ -9,20 +9,20 @@ Owner: Chunliang Mu
 
 
 
-def _is_verbose(iverbose: int|bool, iverbose_req: int|None) -> bool:
+def _is_verbose(verbose: int|bool, verbose_req: int|None) -> bool:
     """Test if we should be verbose."""
-    if iverbose_req is None or isinstance(iverbose, bool):
-        return iverbose
+    if verbose_req is None or isinstance(verbose, bool):
+        return verbose
     else:
-        return iverbose >= iverbose_req
+        return verbose >= verbose_req
 
 
 
 def error(
     orig: str,
-    iverbose: int|bool,
+    verbose: int|bool,
     *msgs: str,
-    iverbose_req: int|None = None,
+    verbose_req: int|None = None,
 ):
     """Show an error message.
 
@@ -31,7 +31,7 @@ def error(
     orig: str
         Origins of this message (typically function name).
 
-    iverbose: int
+    verbose: int
         How much errors, warnings, notes, and debug info to be print on screen.
         * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
             to output to log files.
@@ -39,11 +39,11 @@ def error(
     msgs: str
         The messages to put up.
 
-    iverbose_req: int
-        Required minimum iverbose to do anything.
-        If None, will treat iverbose as a bool and print even if iverbose < 0 !
+    verbose_req: int
+        Required minimum verbose to do anything.
+        If None, will treat verbose as a bool and print even if verbose < 0 !
     """
-    if _is_verbose(iverbose, iverbose_req):
+    if _is_verbose(verbose, verbose_req):
         msgs_txt = '\n\t'.join(msgs)
         print(f"*** Error  :    {orig}:\n\t{msgs_txt}")
     return
@@ -53,9 +53,9 @@ def error(
 
 def warn(
     orig: str,
-    iverbose: int|bool,
+    verbose: int|bool,
     *msgs: str,
-    iverbose_req: int|None = 2,
+    verbose_req: int|None = 2,
 ):
     """Show a warning message.
 
@@ -64,7 +64,7 @@ def warn(
     orig: str
         Origins of this message (typically function name).
 
-    iverbose: int
+    verbose: int
         How much errors, warnings, notes, and debug info to be print on screen.
         * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
             to output to log files.
@@ -72,11 +72,11 @@ def warn(
     msgs: str
         The messages to put up.
 
-    iverbose_min_for_showing: int
-        Required minimum iverbose to do anything.
-        If None, will treat iverbose as a bool and print even if iverbose < 0 !
+    verbose_min_for_showing: int
+        Required minimum verbose to do anything.
+        If None, will treat verbose as a bool and print even if verbose < 0 !
     """
-    if _is_verbose(iverbose, iverbose_req):
+    if _is_verbose(verbose, verbose_req):
         msgs_txt = '\n\t'.join(msgs)
         print(f"**  Warning:    {orig}:\n\t{msgs_txt}")
     return
@@ -86,9 +86,9 @@ def warn(
 
 def note(
     orig: str,
-    iverbose: int|bool,
+    verbose: int|bool,
     *msgs: str,
-    iverbose_req: int|None = 3,
+    verbose_req: int|None = 3,
 ):
     """Show a note message.
 
@@ -97,7 +97,7 @@ def note(
     orig: str
         Origins of this message (typically function name).
 
-    iverbose: int
+    verbose: int
         How much errors, warnings, notes, and debug info to be print on screen.
         * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
             to output to log files.
@@ -105,10 +105,10 @@ def note(
     msgs: str
         The messages to put up.
 
-    iverbose_min_for_showing: int
-        Required minimum iverbose to do anything.
+    verbose_min_for_showing: int
+        Required minimum verbose to do anything.
     """
-    if _is_verbose(iverbose, iverbose_req):
+    if _is_verbose(verbose, verbose_req):
         msgs_txt = '\n\t'.join(msgs)
         print(f"*   Note   :    {orig}:\n\t{msgs_txt}")
     return
@@ -118,9 +118,9 @@ def note(
 
 def debug_info(
     orig: str,
-    iverbose: int|bool,
+    verbose: int|bool,
     *msgs: str,
-    iverbose_req: int|None = 4,
+    verbose_req: int|None = 4,
 ):
     """Show a debug info message.
 
@@ -129,7 +129,7 @@ def debug_info(
     orig: str
         Origins of this message (typically function name).
 
-    iverbose: int
+    verbose: int
         How much errors, warnings, notes, and debug info to be print on screen.
         * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
             to output to log files.
@@ -137,10 +137,10 @@ def debug_info(
     msgs: str
         The messages to put up.
 
-    iverbose_min_for_showing: int
-        Required minimum iverbose to do anything.
+    verbose_min_for_showing: int
+        Required minimum verbose to do anything.
     """
-    if _is_verbose(iverbose, iverbose_req):
+    if _is_verbose(verbose, verbose_req):
         msgs_txt = '\n\t'.join(msgs)
         print(f"Debug Info :    {orig}:\n\t{msgs_txt}")
     return

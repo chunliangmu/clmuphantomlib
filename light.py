@@ -66,7 +66,7 @@ def get_photosphere_on_ray(
     kernel: sarracen.kernels.base_kernel = None,
     do_skip_zero_dtau_pts : bool = True,
     photosphere_tau : float = 1.,
-    iverbose : int = 0,
+    verbose : int = 0,
 ) -> (dict, (np.ndarray, np.ndarray, np.ndarray)):
     """Calc the location where the photosphere intersect with the ray.
 
@@ -154,7 +154,7 @@ def get_photosphere_on_ray(
     photosphere_tau: float
         At what optical depth (tau) is the photosphere defined.
     
-    iverbose: int
+    verbose: int
         How much warnings, notes, and debug info to be print on screen. 
 
 
@@ -269,7 +269,7 @@ def get_photosphere_on_ray(
         elif calc_name == 'R1':
             photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
         elif calc_name in ['rho', 'u']:
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], iverbose=iverbose)
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
         else:
             calc_these.append(calc_name)
 
@@ -295,5 +295,5 @@ def get_photosphere_on_ray(
                 photosphere['T'] = np.nan
         else:
             # just interpolate it (#IT JUST WORKS)
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], iverbose=iverbose)
+            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)

@@ -45,7 +45,7 @@ def _json_encode(
     overwrite_obj       : bool      = False,
     overwrite_obj_kwds  : bool      = False,
     ignore_unknown_types: bool      = False,
-    iverbose            : int       = 1,
+    verbose            : int       = 1,
 ) -> dict:
     """Encode the obj to add meta data and do type convertion.
 
@@ -84,7 +84,7 @@ def _json_encode(
             replace the data with a message ("-NotImplemented-")
             instead of raising a NotImplementedError.
         
-    iverbose: int
+    verbose: int
         How much erros, warnings, notes, and debug info to be print on screen. 
         
     Returns
@@ -115,7 +115,7 @@ def _json_encode(
             return _json_encode(
                 {'_type_': None, '_data_': obj}, metadata=metadata,
                 overwrite_obj=overwrite_obj, overwrite_obj_kwds=overwrite_obj_kwds,
-                ignore_unknown_types=ignore_unknown_types, iverbose=iverbose,)
+                ignore_unknown_types=ignore_unknown_types, verbose=verbose,)
     
     # now, parse regular data
     if isinstance(obj, dict):
@@ -123,11 +123,11 @@ def _json_encode(
         if '_type_' in obj.keys() and obj['_type_']:
             if overwrite_obj_kwds:
                 del obj['_type_']
-                warn('_json_encode(...)', iverbose,
+                warn('_json_encode(...)', verbose,
                      "there are '_type_' keyword inside the input dict." + \
                      "The data stored there will be removed to avoid issues.")
             else:
-                warn('_json_encode(...)', iverbose,
+                warn('_json_encode(...)', verbose,
                      "*   Warning: _json_encode(...):" + \
                      "there are '_type_' keyword inside the input dict. These could cause issues when reading data.")
         # recursively format whatever is inside the dict
@@ -135,7 +135,7 @@ def _json_encode(
             obj[key] = _json_encode(
                 obj[key], metadata=None,
                 overwrite_obj=overwrite_obj, overwrite_obj_kwds=overwrite_obj_kwds,
-                ignore_unknown_types=ignore_unknown_types, iverbose=iverbose,)
+                ignore_unknown_types=ignore_unknown_types, verbose=verbose,)
     else:
         # meaning this func is being recursively called- return the obj
         if isinstance( obj, (list, str, int, float, bool, type(None),) ):
@@ -176,7 +176,7 @@ def _json_decode(
     obj : dict,
     overwrite_obj   : bool = False,
     remove_metadata : bool = True,
-    iverbose        : int  = 1,
+    verbose        : int  = 1,
 ) -> dict:
     """Decode the obj obtained from json_load(...) to its original state.
 
@@ -193,7 +193,7 @@ def _json_decode(
     remove_metadata: bool
         Remove meta data from loaded dict (top level only).
         
-    iverbose: int
+    verbose: int
         How much erros, warnings, notes, and debug info to be print on screen. 
         
     Returns
@@ -220,7 +220,7 @@ def _json_decode(
                     return _json_decode(
                         obj['_data_'],
                         overwrite_obj=overwrite_obj,
-                        remove_metadata=False, iverbose=iverbose)
+                        remove_metadata=False, verbose=verbose)
             elif obj['_type_'] == 'tuple':
                 if '_data_' in obj.keys():
                     return tuple(obj['_data_'])
@@ -231,12 +231,12 @@ def _json_decode(
                 if '_data_' in obj.keys() and '_unit_' in obj.keys():
                     return units.Quantity(value=obj['_data_'], unit=obj['_unit_'], copy=(not overwrite_obj))
             else:
-                warn('_json_decode()', iverbose,
+                warn('_json_decode()', verbose,
                      f"Unrecognized obj['_type_']= {obj['_type_']}" + \
                      "type convertion for this is cancelled."
                      )
                     
-            warn('_json_decode()', iverbose,
+            warn('_json_decode()', verbose,
                  "Found '_type_' keyword, but read failed." + \
                  "This could imply save file corruption." + \
                  " obj['_type_'] data ignored."
@@ -245,7 +245,7 @@ def _json_decode(
             obj[key] = _json_decode(
                 obj[key],
                 overwrite_obj=overwrite_obj,
-                remove_metadata=False, iverbose=iverbose)
+                remove_metadata=False, verbose=verbose)
 
     return obj
 
@@ -261,7 +261,7 @@ def json_dump(
     overwrite_obj_kwds = False,
     ignore_unknown_types: bool = False,
     indent: int|None = 1,
-    iverbose: int = 1,
+    verbose: int = 1,
 ):
     """Dump obj to file-like fp as a json file in my custom format with support of numpy arrays etc.
 
@@ -295,13 +295,13 @@ def json_dump(
     indent: int | None
         indentation in the saved json files.
         
-    iverbose: int
+    verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
     obj = _json_encode(
         obj, metadata=metadata,
         overwrite_obj=overwrite_obj, overwrite_obj_kwds=overwrite_obj_kwds,
-        ignore_unknown_types=ignore_unknown_types, iverbose=iverbose,)
+        ignore_unknown_types=ignore_unknown_types, verbose=verbose,)
     return json.dump( obj, fp, indent=indent, )
 
 
@@ -309,7 +309,7 @@ def json_dump(
 def json_load(
     fp: io.BufferedReader,
     remove_metadata: bool = True,
-    iverbose: int = 1,
+    verbose: int = 1,
 ):
     """Read obj from a json file (saved by json_dump(...) in this submodule).
 
@@ -321,10 +321,10 @@ def json_load(
     remove_metadata: bool
         remove meta data from loaded dict.
         
-    iverbose: int
+    verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
-    return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=True, iverbose=iverbose, )
+    return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=True, verbose=verbose, )
 
 
 
@@ -336,7 +336,7 @@ def fortran_read_file_unformatted(
     fp: io.BufferedReader,
     t: str,
     no: int|None = None,
-    iverbose: int = 3,
+    verbose: int = 3,
 ) -> tuple:
     """Read one record from an unformatted file saved by fortran.
 
@@ -356,7 +356,7 @@ def fortran_read_file_unformatted(
     no: int|None
         Number of data in this record. if None, will infer from record.
         
-    iverbose: int
+    verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
 
@@ -371,7 +371,7 @@ def fortran_read_file_unformatted(
         t_no_bytes = 8
     else:
         error(
-            'fortran_read_file_unformatted()', iverbose,
+            'fortran_read_file_unformatted()', verbose,
             f"Unrecognized data type t={t}."
             )
         raise NotImplementedError
@@ -384,7 +384,7 @@ def fortran_read_file_unformatted(
     else:
         rec_no_bytes_used = no * t_no_bytes
         if no != no_in_record:
-            warn('fortran_read_file_unformatted()', iverbose,
+            warn('fortran_read_file_unformatted()', verbose,
                  f"Supplied no={no} does not match the record no_in_record={no_in_record}.",
                  "Incorrect type perhaps?",
                  "will continue to use supplied no regardless."
@@ -393,7 +393,7 @@ def fortran_read_file_unformatted(
     data = struct.unpack(f'{no}{t_format}', fp.read(rec_no_bytes_used))
     rec_no_bytes_again = struct.unpack('i', fp.read(4))[0]
     if rec_no_bytes != rec_no_bytes_again:
-        warn('fortran_read_file_unformatted()', iverbose,
+        warn('fortran_read_file_unformatted()', verbose,
              "The no of bytes recorded in the beginning and the end of the record did not match!",
              f"Beginning is {rec_no_bytes}, while end is {rec_no_bytes_again}.",
              "This means something is seriously wrong.",

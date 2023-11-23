@@ -30,7 +30,7 @@ class Settings:
     Using a class and private vars to make sure I don't stupidly overwrite it.
     will set __getitem__() but not __setitem__()
     """
-    def __init__(self, set_as:dict|str="default", iverbose:int=3):
+    def __init__(self, set_as:dict|str="default", verbose:int=3):
         """Init.
         """
         self.__data = {
@@ -45,7 +45,7 @@ class Settings:
         }
 
         if set_as == "default":
-            self.set_as_default(iverbose=iverbose)
+            self.set_as_default(verbose=verbose)
         elif isinstance(set_as, dict):
             raise NotImplementedError
         return
@@ -62,7 +62,7 @@ class Settings:
         return self.__data.__str__()
 
     
-    def set_as_default(self, iverbose=3):
+    def set_as_default(self, verbose=3):
         self.__data['PHANTOM_DIR'] = os.getenv('PHANTOM_DIR')
         if isinstance(self.__data['PHANTOM_DIR'], str):
             self.__data['PHANTOM_DIR']  = os.path.normpath(self.__data['PHANTOM_DIR'])
@@ -70,7 +70,7 @@ class Settings:
         else:
             if self.__data['PHANTOM_DIR'] is not None:
                 warn(
-                    "Settings.set_as_default()", iverbose,
+                    "Settings.set_as_default()", verbose,
                     f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}"
                 )
             self.__data['EoS_MESA_DATA_DIR'] = None
@@ -94,7 +94,7 @@ class Settings:
         self.normalize(force=True)
 
     
-    def normalize(self, force=True, iverbose=3):
+    def normalize(self, force=True, verbose=3):
         """Post processing info stored in self."""
 
         for elem in ['X', 'Z']:

@@ -29,8 +29,8 @@ from astropy import units
 
 class EoS_Base:
     """Base Class for Equation of State Objects."""
-    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3):
-        note('EoS_Base', iverbose, "Loading EoS_Base.")
+    def __init__(self, params: dict, settings: Settings=DEFAULT_SETTINGS, verbose: int=3):
+        note('EoS_Base', verbose, "Loading EoS_Base.")
         return
 
     def get_val_cgs(
@@ -39,7 +39,7 @@ class EoS_Base:
         rho: np.ndarray|units.Quantity,
         u  : np.ndarray|units.Quantity,
         *params_list,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict,
     ) -> np.ndarray:
         """Virtual function for getting values from EoS and rho and u in cgs units.
@@ -65,7 +65,7 @@ class EoS_Base:
             if the results should be returned as a astropy.units.Quantity.
             If None, will only return as that if one of the input rho or u is that.
             
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
 
@@ -77,7 +77,7 @@ class EoS_Base:
         ans: np.ndarray | units.Quantity
             calc-ed EoS values.
         """
-        debug_info("EoS_Base.get_val_cgs()", iverbose, "Calling this.")
+        debug_info("EoS_Base.get_val_cgs()", verbose, "Calling this.")
         raise NotImplementedError
 
 
@@ -89,7 +89,7 @@ class EoS_Base:
         u  : np.ndarray|units.Quantity,
         *params_list,
         return_as_quantity: bool|None = None,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict,
     ) -> np.ndarray|units.Quantity:
         """Getting specific values from EoS and rho and u.
@@ -112,7 +112,7 @@ class EoS_Base:
             if the results should be returned as a astropy.units.Quantity.
             If None, will only return as that if one of the input rho or u is that.
             
-        iverbose: int
+        verbose: int
             How much errors, warnings, notes, and debug info to be print on screen.
 
 
@@ -125,7 +125,7 @@ class EoS_Base:
             calc-ed EoS values.
         
         """
-        debug_info("EoS_Base.get_val()", iverbose, "Calling this.")
+        debug_info("EoS_Base.get_val()", verbose, "Calling this.")
         return_quantity = False
         if isinstance(rho, units.Quantity):
             rho = rho.cgs.value
@@ -138,7 +138,7 @@ class EoS_Base:
         
         ans = self.get_val_cgs(
             val_name, rho, u, *params_list,
-            return_as_quantity=return_as_quantity, iverbose=iverbose,
+            return_as_quantity=return_as_quantity, verbose=verbose,
             **params_dict,
         )
 
@@ -155,7 +155,7 @@ class EoS_Base:
         u  : np.ndarray|units.Quantity,
         *params_list,
         return_as_quantity: bool|None = None,
-        iverbose: int = 3,
+        verbose: int = 3,
         **params_dict
     ):
         """Getting temperature from EoS and rho and u.
@@ -163,10 +163,10 @@ class EoS_Base:
         
         See self.get_val_cgs() for more info.
         """
-        debug_info("EoS_Base.get_temp()", iverbose, "Calling this.")
+        debug_info("EoS_Base.get_temp()", verbose, "Calling this.")
         return self.get_val(
             'T', rho, u, *params_list,
-            return_as_quantity=return_as_quantity, iverbose=iverbose,
+            return_as_quantity=return_as_quantity, verbose=verbose,
             **params_dict,
         )
 

@@ -22,12 +22,12 @@ from .eos_mesa import EoS_MESA
 
 #  import (general)
 
-def get_eos(ieos: int, params: dict, settings: Settings=DEFAULT_SETTINGS, iverbose: int=3) -> EoS_Base:
+def get_eos(ieos: int, params: dict, settings: Settings=DEFAULT_SETTINGS, verbose: int=3) -> EoS_Base:
     """Get an EoS object, which you can use to get temp etc values fro rho and u."""
     if ieos == 10:
-        return EoS_MESA(params, settings, iverbose)
+        return EoS_MESA(params, settings, verbose)
     else:
-        error('get_eos()', iverbose, f"Unrecognized ieos={ieos}.")
+        error('get_eos()', verbose, f"Unrecognized ieos={ieos}.")
         raise NotImplementedError
 
 
