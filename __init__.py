@@ -33,8 +33,8 @@ from . import sph_interp
 from .settings import DEFAULT_SETTINGS
 from .geometry import *
 from .readwrite import *
-from .light import *
+from .light import get_ray_unit_vec, get_photosphere_on_ray
 from .eos import get_eos
 
-
+# .main is deprecrated but we will go with this for now.
 from .main  import *

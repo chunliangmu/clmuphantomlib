@@ -5,7 +5,7 @@
 
 
 """
-Old main library- I have plans to disassemble this into different files. 
+Old main library- Will be disassembled into different files in the future *sometime*.
 
 Owner: Chunliang Mu
 
@@ -32,6 +32,7 @@ from .log import error, warn, note, debug_info
 from .geometry import *
 from .units_util import DEFAULT_UNITS, set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .sph_interp import get_sph_interp
+from .mpdf import *
 
 
 # In[3]:
