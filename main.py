@@ -900,5 +900,3 @@ def plot_mpdf_movies_single_ray_trace_profiles__TMP_FUNC_IGNORE_ME(
     return moviefilename, times, photospheres, lum_effs
 
 
-
-
