@@ -36,6 +36,7 @@ def is_verbose(verbose: int|bool, verbose_req: None|int|str) -> bool:
 
 
 
+
 def saying(
     level  : str,
     orig   : str,
@@ -100,133 +101,21 @@ def saying(
 
 
 
+def error(*args, verbose_req: int|None = 'None'):
+    """Show an Error message. Deprecated. Use saying() instead."""
+    return saying('err',   *args, verbose_req=verbose_req)
 
 
+def warn(*args, verbose_req: int|None = 2):
+    """Show a warning message. Deprecated. Use saying() instead."""
+    return saying('warn',  *args, verbose_req=verbose_req)
+    
+
+def note(*args, verbose_req: int|None = 3):
+    """Show a note message. Deprecated. Use saying() instead."""
+    return saying('note',  *args, verbose_req=verbose_req)
 
 
-def error(
-    orig: str,
-    verbose: int|bool,
-    *msgs: str,
-    verbose_req: int|None = 'None',
-):
-    """Show an error message.
-
-    Parameters
-    ----------
-    orig: str
-        Origins of this message (typically function name).
-
-    verbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
-            to output to log files.
-
-    msgs: str
-        The messages to put up.
-
-    verbose_req: int
-        Required minimum verbose to do anything.
-        If None, will treat verbose as a bool and print even if verbose < 0 !
-    """
-    #if is_verbose(verbose, verbose_req):
-    #    msgs_txt = '\n\t'.join(msgs)
-    #    print(f"*** Error  :    {orig}:\n\t{msgs_txt}")
-    return saying('err', orig, verbose, *msgs, verbose_req=verbose_req)
-
-
-
-
-def warn(
-    orig: str,
-    verbose: int|bool,
-    *msgs: str,
-    verbose_req: int|None = 2,
-):
-    """Show a warning message.
-
-    Parameters
-    ----------
-    orig: str
-        Origins of this message (typically function name).
-
-    verbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
-            to output to log files.
-
-    msgs: str
-        The messages to put up.
-
-    verbose_min_for_showing: int
-        Required minimum verbose to do anything.
-        If None, will treat verbose as a bool and print even if verbose < 0 !
-    """
-    #if is_verbose(verbose, verbose_req):
-    #    msgs_txt = '\n\t'.join(msgs)
-    #    print(f"**  Warning:    {orig}:\n\t{msgs_txt}")
-    return saying('warn', orig, verbose, *msgs, verbose_req=verbose_req)
-
-
-
-
-def note(
-    orig: str,
-    verbose: int|bool,
-    *msgs: str,
-    verbose_req: int|None = 3,
-):
-    """Show a note message.
-
-    Parameters
-    ----------
-    orig: str
-        Origins of this message (typically function name).
-
-    verbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
-            to output to log files.
-
-    msgs: str
-        The messages to put up.
-
-    verbose_min_for_showing: int
-        Required minimum verbose to do anything.
-    """
-    #if is_verbose(verbose, verbose_req):
-    #    msgs_txt = '\n\t'.join(msgs)
-    #    print(f"*   Note   :    {orig}:\n\t{msgs_txt}")
-    return saying('note', orig, verbose, *msgs, verbose_req=verbose_req)
-
-
-
-
-def debug_info(
-    orig: str,
-    verbose: int|bool,
-    *msgs: str,
-    verbose_req: int|None = 4,
-):
-    """Show a debug info message.
-
-    Parameters
-    ----------
-    orig: str
-        Origins of this message (typically function name).
-
-    verbose: int
-        How much errors, warnings, notes, and debug info to be print on screen.
-        * Note: Input type maybe exppand to accepting (int, file stream) as well in the future,
-            to output to log files.
-        
-    msgs: str
-        The messages to put up.
-
-    verbose_min_for_showing: int
-        Required minimum verbose to do anything.
-    """
-    #if is_verbose(verbose, verbose_req):
-    #    msgs_txt = '\n\t'.join(msgs)
-    #    print(f"Debug Info :    {orig}:\n\t{msgs_txt}")
-    return saying('debug', orig, verbose, *msgs, verbose_req=verbose_req)
+def debug_info(*args, verbose_req: int|None = 4):
+    """Show a debug info message. Deprecated. Use saying() instead."""
+    return saying('debug', *args, verbose_req=verbose_req)
