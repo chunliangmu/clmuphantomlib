@@ -37,7 +37,7 @@ def is_verbose(verbose: int|bool, verbose_req: None|int|str) -> bool:
 
 
 
-def saying(
+def say(
     level  : str,
     orig   : str,
     verbose: int|bool,
@@ -102,20 +102,20 @@ def saying(
 
 
 def error(*args, verbose_req: int|None = 'None'):
-    """Show an Error message. Deprecated. Use saying() instead."""
-    return saying('err',   *args, verbose_req=verbose_req)
+    """Show an Error message. Deprecated. Use say() instead."""
+    return say('err',   *args, verbose_req=verbose_req)
 
 
 def warn(*args, verbose_req: int|None = 2):
-    """Show a warning message. Deprecated. Use saying() instead."""
-    return saying('warn',  *args, verbose_req=verbose_req)
+    """Show a warning message. Deprecated. Use say() instead."""
+    return say('warn',  *args, verbose_req=verbose_req)
     
 
 def note(*args, verbose_req: int|None = 3):
-    """Show a note message. Deprecated. Use saying() instead."""
-    return saying('note',  *args, verbose_req=verbose_req)
+    """Show a note message. Deprecated. Use say() instead."""
+    return say('note',  *args, verbose_req=verbose_req)
 
 
 def debug_info(*args, verbose_req: int|None = 4):
-    """Show a debug info message. Deprecated. Use saying() instead."""
-    return saying('debug', *args, verbose_req=verbose_req)
+    """Show a debug info message. Deprecated. Use say() instead."""
+    return say('debug', *args, verbose_req=verbose_req)

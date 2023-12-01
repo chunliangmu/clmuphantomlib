@@ -15,7 +15,7 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from .log import saying, is_verbose
+from .log import say, is_verbose
 from .units_util import DEFAULT_UNITS, complete_units_dict, set_as_quantity, get_units_field_name
 from .geometry import get_r_from_loc
 
@@ -73,7 +73,7 @@ class MyPhantomDataFrames:
         self.const['G'] = const.G.to_value(self.units['G'])
         self.const['sigma_sb'] = const.sigma_sb.to_value(self.units['sigma_sb'])
         if is_verbose(verbose, 'debug'):
-            saying(
+            say(
                 'debug', "mupl.MyPhantomDataFrames._update_units()", verbose,
                 f"{self.units=}\n",
                 f"G={self.const['G']} {self.units['G']}\n",
@@ -144,7 +144,7 @@ class MyPhantomDataFrames:
         self.file_index = file_index
         filename = self.get_filename()
         if is_verbose(verbose, 'note'):
-            saying('note', 'MyPhantomDataFrames.read()', verbose, f"Reading {filename=}")
+            say('note', 'MyPhantomDataFrames.read()', verbose, f"Reading {filename=}")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
@@ -176,7 +176,7 @@ class MyPhantomDataFrames:
         }
         self._update_units()
         if is_verbose(verbose, 'debug'):
-            saying(
+            say(
                 'debug', 'mupl.MyPhantomDataFrames.read()', verbose,
                 *[f"{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}" for i in ['dist', 'mass', 'time']],
                 f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }\n",
@@ -189,7 +189,7 @@ class MyPhantomDataFrames:
         
         if not reset_xyz_by:
             if is_verbose(verbose, 'warn') and get_r_from_loc(self.loc_CoM) > 1:
-                saying(
+                say(
                     'warn', 'MyPhantomDataFrames.read()', verbose,
                     "*    Warning: CoM significantly deviates from the origin," + \
                     f"with distance of {get_r_from_loc(self.loc_CoM)}" + \
@@ -224,7 +224,7 @@ class MyPhantomDataFrames:
                         do_warn = False
             # warn
             if do_warn and is_verbose(verbose, 'warn'):
-                saying(
+                say(
                     'warn', 'MyPhantomDataFrames.read()', verbose,
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=}",
@@ -476,13 +476,13 @@ class MyPhantomDataFrames:
         if len(self.data['sink']) != 2:
             if len(self.data['sink']) <= 1:
                 if is_verbose(verbose, 'err'):
-                    saying(
+                    say(
                         'err', 'MyPhantomDataFrames.get_orb_sep()', verbose,
                         f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
                 return np.nan
             else:
                 if is_verbose(verbose, 'warn'):
-                    saying(
+                    say(
                         'warn', 'MyPhantomDataFrames.get_orb_sep()', verbose,
                         f"In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
         # calc
