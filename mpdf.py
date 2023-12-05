@@ -229,9 +229,9 @@ class MyPhantomDataFrames:
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=}",
                     "However in phantom kappa is often (?) assumed to be in cgs unit.",
-                    "\n    If so, please COVERT KAPPA MANNUALLY into PHANTOM UNITS by using code, such as:",
+                    "\n    If so, please CONVERT KAPPA MANNUALLY into PHANTOM UNITS, such as:",
                     "\n        mpdf.data['gas']['kappa'] = ", 
-                    "mupl.set_as_quantity(mpdf.data['gas']['kappa'], units.cm**2/units.g).to_value(mpdf.units['opacity'])"
+                    "mupl.get_val_in_unit(mpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])"
                 )
         
 
