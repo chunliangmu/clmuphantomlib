@@ -144,7 +144,7 @@ class MyPhantomDataFrames:
         self.file_index = file_index
         filename = self.get_filename()
         if is_verbose(verbose, 'note'):
-            say('note', 'MyPhantomDataFrames.read()', verbose, f"Reading {filename=}")
+            say('note', 'MyPhantomDataFrames.read()', verbose, f"\n\tReading {filename=}\n")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
