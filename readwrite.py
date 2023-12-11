@@ -13,7 +13,7 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from .log import error, warn, note, debug_info
+from .log import say, is_verbose
 
 
 #  import (general)
@@ -123,13 +123,13 @@ def _json_encode(
         if '_type_' in obj.keys() and obj['_type_']:
             if overwrite_obj_kwds:
                 del obj['_type_']
-                warn('_json_encode(...)', verbose,
-                     "there are '_type_' keyword inside the input dict." + \
-                     "The data stored there will be removed to avoid issues.")
+                say('warn', '_json_encode(...)', verbose,
+                    "there are '_type_' keyword inside the input dict.",
+                    "The data stored there will be removed to avoid issues.")
             else:
-                warn('_json_encode(...)', verbose,
-                     "*   Warning: _json_encode(...):" + \
-                     "there are '_type_' keyword inside the input dict. These could cause issues when reading data.")
+                say('warn', '_json_encode(...)', verbose,
+                    "there are '_type_' keyword inside the input dict.",
+                    "These could cause issues when reading data.")
         # recursively format whatever is inside the dict
         for key in obj.keys():
             obj[key] = _json_encode(
@@ -231,9 +231,9 @@ def _json_decode(
                 if '_data_' in obj.keys() and '_unit_' in obj.keys():
                     return units.Quantity(value=obj['_data_'], unit=obj['_unit_'], copy=(not overwrite_obj))
             else:
-                warn('_json_decode()', verbose,
-                     f"Unrecognized obj['_type_']= {obj['_type_']}" + \
-                     "type convertion for this is cancelled."
+                say('warn', '_json_decode()', verbose,
+                    f"Unrecognized obj['_type_']= {obj['_type_']}",
+                    "type convertion for this is cancelled."
                      )
                     
             warn('_json_decode()', verbose,
@@ -370,7 +370,7 @@ def fortran_read_file_unformatted(
         t_format = 'd'
         t_no_bytes = 8
     else:
-        error(
+        say('err',
             'fortran_read_file_unformatted()', verbose,
             f"Unrecognized data type t={t}."
             )
@@ -384,20 +384,20 @@ def fortran_read_file_unformatted(
     else:
         rec_no_bytes_used = no * t_no_bytes
         if no != no_in_record:
-            warn('fortran_read_file_unformatted()', verbose,
-                 f"Supplied no={no} does not match the record no_in_record={no_in_record}.",
-                 "Incorrect type perhaps?",
-                 "will continue to use supplied no regardless."
+            say('warn', 'fortran_read_file_unformatted()', verbose,
+                f"Supplied no={no} does not match the record no_in_record={no_in_record}.",
+                "Incorrect type perhaps?",
+                "will continue to use supplied no regardless."
             )
 
     data = struct.unpack(f'{no}{t_format}', fp.read(rec_no_bytes_used))
     rec_no_bytes_again = struct.unpack('i', fp.read(4))[0]
     if rec_no_bytes != rec_no_bytes_again:
-        warn('fortran_read_file_unformatted()', verbose,
-             "The no of bytes recorded in the beginning and the end of the record did not match!",
-             f"Beginning is {rec_no_bytes}, while end is {rec_no_bytes_again}.",
-             "This means something is seriously wrong.",
-             "Please Check if data sturcture is correct and file is not corrupted.",
+        say('warn', 'fortran_read_file_unformatted()', verbose,
+            "The no of bytes recorded in the beginning and the end of the record did not match!",
+            f"Beginning is {rec_no_bytes}, while end is {rec_no_bytes_again}.",
+            "This means something is seriously wrong.",
+            "Please Check if data sturcture is correct and file is not corrupted.",
         )
     return data
 
