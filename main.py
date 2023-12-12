@@ -297,88 +297,8 @@ def get_temp_from_u(
     return temp
 
 
-# In[13]:
 
 
-# get optical depth by ray-tracing
-
-def get_optical_depth_by_ray_tracing_3D(
-    sdf : sarracen.SarracenDataFrame,
-    ray : np.ndarray,
-    kernel : sarracen.kernels.BaseKernel = None,
-) -> (np.ndarray, np.ndarray, np.ndarray):
-    """Get an array of optical depth for a ray traced backwards.
-    
-    Assuming 3 dimensions.
-    
-    
-    Parameters
-    ----------
-    sdf: sarracen.SarracenDataFrame
-        Must contain columns: x, y, z, m, h, kappa
-        
-    ray: 2D list/array with shape of (2, 3), i.e. [[float, float, float], [float, float, float]]
-        Representing the ray trajectory. Currently only straight infinite lines are supported.
-        [[begin point], [end point]]
-        where the end point is closer to the observer.
-        
-    kernel: sarracen.kernels.base_kernel
-        Smoothing kernel for SPH data interpolation.
-        If None, will use the one in sdf.
-    
-    
-    Returns
-    -------
-    pts_on_ray, dtaus, pts_order
-    
-    pts_on_ray: np.ndarray
-        Orthogonal projections of the particles' locations onto the ray.
-    
-    dtaus: np.ndarray
-        Optical depth tau contributed by each particles. In order of the original particles order in the dump file.
-        Remember tau is a dimensionless quantity.
-    
-    pts_order: np.ndarray
-        indices of the particles where dtaus are non-zero.
-        The indices are arranged by distances to the observer, i.e. the particles closest to the observer comes first, 
-        and the furtherest comes last.
-    
-    """
-    # init
-    ndim = 3
-    npart = len(sdf)
-    if kernel is None: kernel = sdf.kernel
-    col_kernel = kernel.get_column_kernel_func(samples=1000) # w integrated from z
-    pts = np.array(sdf[['x', 'y', 'z']])    # (npart, 3)-shaped array (must be this shape for pts_order sorting below)
-    hs  = np.array(sdf['h'])    # npart-shaped array
-    masses = np.array(sdf['m'])
-    kappas = np.array(sdf['kappa'])
-    ray = np.array(ray)
-    if ray.shape != (2, ndim):
-        raise ValueError(f"var 'ray' should have 2 points (i.e. with shape (2, {ndim=})), but {ray.shape=} is not.")
-    ray_unit_vec = ray[1, :] - ray[0, :]
-    ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2)**0.5
-    
-
-    # dtaus = kappa * m / h**2 * col_kernel(q, ndim-1)
-    # q for SPH weight input
-    pts_on_ray = get_closest_pt_on_line(pts, ray)
-    qs = np.sum((pts - pts_on_ray)**2, axis=-1)**0.5 / hs
-    terms = kappas * masses / hs**2
-    dtaus = np.array([term * col_kernel(q, ndim-1) for term, q in zip(terms, qs)])
-    
-    
-    # calculate the order in which particles lie along the ray from observer to the opposite side
-    pts_on_ray_factor = -np.sum(pts_on_ray * ray_unit_vec, axis=-1) # the lower, the more on the pt2 side (observer)
-    ## simple ver.
-    #pts_order = np.argsort(pts_on_ray_factor)
-    # longer ver.
-    # remove zero dtaus terms in pts_order to optimize
-    pts_indices = np.arange(len(pts_on_ray_factor))
-    pts_nonzero_indices = dtaus.nonzero()[0]
-    pts_order = pts_indices[pts_nonzero_indices][np.argsort(pts_on_ray_factor[pts_nonzero_indices])]
-    
-    return pts_on_ray, dtaus, pts_order
 
 
 # #### Equations from External sources- remember to cite!
