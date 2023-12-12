@@ -5,6 +5,7 @@
 
 
 """
+Deprecated.
 Old main library- Will be disassembled into different files in the future *sometime*.
 
 Owner: Chunliang Mu
