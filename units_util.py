@@ -87,25 +87,25 @@ def get_units_field_name(val_name: str) -> str:
     """Translate sarracen data frame column name into units field name,
     as shown in complete_units_dict().
     """
-    if val_name == 'rho':
+    if   val_name in {'rho'}:
         return 'density'
-    elif val_name in ['u']:
+    elif val_name in {'u'}:
         return 'specificEnergy'
-    elif val_name in ['T', 'temp', 'temperature', 'Tdust', 'Tgas', 'Teff']:
+    elif val_name in {'T', 'temp', 'temperature', 'Tdust', 'Tgas', 'Teff'}:
         return 'temp'
-    elif val_name in ['m', 'mass']:
+    elif val_name in {'m', 'mass'}:
         return 'mass'
-    elif val_name in ['x', 'y', 'z', 'h']:
+    elif val_name in {'x', 'y', 'z', 'h'}:
         return 'dist'
-    elif val_name in ['t', 'time']:
+    elif val_name in {'t', 'time'}:
         return 'time'
-    elif val_name in ['v', 'vx', 'vy', 'vz']:
+    elif val_name in {'v', 'vx', 'vy', 'vz'}:
         return 'speed'
-    elif val_name in ['kappa', 'opacity']:
+    elif val_name in {'kappa', 'opacity'}:
         return 'opacity'
-    elif val_name in ['lum']:
+    elif val_name in {'lum'}:
         return 'lum'
-    elif val_name in ['tau', 'opticalDepth']:
+    elif val_name in {'tau', 'opticalDepth'}:
         return 'dimless'
     else:
         raise NotImplementedError
