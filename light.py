@@ -399,7 +399,7 @@ def get_photosphere_on_ray(
             if calc_name not in {'is_found'}:
                 # find appropriate unit
                 try:
-                    unit_field_name = get_units_field_name[calc_name]
+                    unit_field_name = get_units_field_name(calc_name)
                 except NotImplementedError:
                     # failed to find unit type
                     unit_field_name = None
