@@ -188,12 +188,11 @@ class MyPhantomDataFrames:
             reset_xyz_by = "CoM"
         
         if not reset_xyz_by:
-            if is_verbose(verbose, 'warn') and get_r_from_loc(self.loc_CoM) > 1:
+            if is_verbose(verbose, 'note') and get_r_from_loc(self.loc_CoM) > 1:
                 say(
-                    'warn', 'MyPhantomDataFrames.read()', verbose,
-                    "*    Warning: CoM significantly deviates from the origin," + \
-                    f"with distance of {get_r_from_loc(self.loc_CoM)}" + \
-                    "Consider use reset_xyz_by_CoM=True option when read."
+                    'note', 'MyPhantomDataFrames.read()', verbose,
+                    f"CoM significantly deviates from the origin with distance of {get_r_from_loc(self.loc_CoM)}.",
+                    "Consider use reset_xyz_by_CoM=True option when read?",
                 )
         else:
             # do reset xyz
@@ -227,11 +226,11 @@ class MyPhantomDataFrames:
                 say(
                     'warn', 'MyPhantomDataFrames.read()', verbose,
                     "kappa column exists.",
-                    f"We here assume kappa is in phantom units {self.units['opacity']=}",
-                    "However in phantom kappa is often (?) assumed to be in cgs unit.",
-                    "\n    If so, please CONVERT KAPPA MANNUALLY into PHANTOM UNITS, such as:",
-                    "\n        mpdf.data['gas']['kappa'] = ", 
-                    "mupl.get_val_in_unit(mpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])"
+                    f"We here assume kappa is in phantom units {self.units['opacity']=} ",
+                    "However in phantom kappa is assumed to be in cgs unit.",
+                    "If so, please CONVERT KAPPA MANNUALLY into PHANTOM UNITS, such as:",
+                    "\tmpdf.data['gas']['kappa'] = ", 
+                    "\tmupl.get_val_in_unit(mpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])",
                 )
         
 
