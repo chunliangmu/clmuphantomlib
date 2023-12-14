@@ -17,7 +17,7 @@ Owner: Chunliang Mu
 #  import (my libs)
 from .log import say, is_verbose
 from .geometry import get_dist2_between_2pt, get_closest_pt_on_line
-from .sph_interp import get_sph_interp, get_h_from_rho, get_units_field_name
+from .sph_interp import get_sph_interp, get_h_from_rho
 from .units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .eos_base import EoS_Base
 
