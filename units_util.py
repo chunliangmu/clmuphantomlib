@@ -69,6 +69,8 @@ def get_val_in_unit(
 def complete_units_dict(base_units: dict) -> dict:
     """Complete base_units dict using its mass, dist, time, & temp.
     Will write to base_units so be careful.
+
+    Note: None (NoneType) must not be in the base_units.keys(). If it is in, it will be deleted.
     """
     base_units['dimless'] = units.dimensionless_unscaled
     base_units['speed']   = base_units['dist'] / base_units['time']
@@ -80,6 +82,11 @@ def complete_units_dict(base_units: dict) -> dict:
     base_units['opacity'] = base_units['dist']**2 / base_units['mass']
     base_units['G'] = base_units['dist']**3 / ( base_units['mass'] * base_units['time']**2 )
     base_units['sigma_sb'] = base_units['lum'] / base_units['dist']**2 / base_units['temp']**4
+    if None in base_units.keys():
+        # remove None, because
+        #    in other places I would set key=None when something goes wrong,
+        #    and when later checking if key in base_units.keys() it should be False
+        del base_units[None]
     return base_units
 
 
@@ -95,7 +102,7 @@ def get_units_field_name(val_name: str) -> str:
         return 'temp'
     elif val_name in {'m', 'mass'}:
         return 'mass'
-    elif val_name in {'x', 'y', 'z', 'h'}:
+    elif val_name in {'x', 'y', 'z', 'h', 'loc', 'R1'}:
         return 'dist'
     elif val_name in {'t', 'time'}:
         return 'time'
