@@ -15,9 +15,10 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
+from .log import say, is_verbose
 from .geometry import get_dist2_between_2pt, get_closest_pt_on_line
-from .sph_interp import get_sph_interp, get_h_from_rho
-from .units_util import set_as_quantity, set_as_quantity_temperature
+from .sph_interp import get_sph_interp, get_h_from_rho, get_units_field_name
+from .units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .eos_base import EoS_Base
 
 #  import (general)
@@ -153,7 +154,8 @@ def get_photosphere_on_ray(
     kernel: sarracen.kernels.base_kernel = None,
     do_skip_zero_dtau_pts : bool = True,
     photosphere_tau : float = 1.,
-    verbose : int = 0,
+    return_as_quantity: bool|None = True,
+    verbose : int = 3,
 ) -> (dict, (np.ndarray, np.ndarray, np.ndarray)):
     """Calc the location where the photosphere intersect with the ray.
 
@@ -240,6 +242,13 @@ def get_photosphere_on_ray(
         
     photosphere_tau: float
         At what optical depth (tau) is the photosphere defined.
+
+    return_as_quantity: bool | None
+        If True or None, the results in photosphere will be returned as a astropy.units.Quantity according to sdf_units.
+        (pts_waypts, pts_waypts_t, taus_waypts) will also be returned as numpy array and NOT as Quantity.
+        The diff between True and None is that True will raise an error if units not supplied in sdf_units,
+        while None will just return as numpy array in such case.
+        
     
     verbose: int
         How much warnings, notes, and debug info to be print on screen. 
@@ -355,7 +364,7 @@ def get_photosphere_on_ray(
             pass
         elif calc_name == 'R1':
             photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
-        elif calc_name in ['rho', 'u']:
+        elif calc_name in {'rho', 'u'}:
             photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
         else:
             calc_these.append(calc_name)
@@ -383,4 +392,27 @@ def get_photosphere_on_ray(
         else:
             # just interpolate it (#IT JUST WORKS)
             photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
+
+    # add units
+    if return_as_quantity or return_as_quantity is None:
+        for calc_name in photosphere.keys():
+            if calc_name not in {'is_found'}:
+                # find appropriate unit
+                try:
+                    unit_field_name = get_units_field_name[calc_name]
+                except NotImplementedError:
+                    # failed to find unit type
+                    unit_field_name = None
+                if unit_field_name in sdf_units.keys():
+                    # add units
+                    photosphere[calc_name] = set_as_quantity(photosphere[calc_name], sdf_units[unit_field_name])
+                # errors
+                elif unit_field_name is None:
+                    if is_verbose(verbose, 'warn'):
+                        say('warn', 'get_photosphere_on_ray()', verbose,
+                            f"Cannot find the corresponding unit for {calc_name}. Will return as numpy array instead.")
+                elif return_as_quantity is not None:
+                    raise ValueError(f"Please supply {unit_field_name} in sdf_units.")
+        
+        
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
