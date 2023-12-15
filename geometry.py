@@ -36,7 +36,7 @@ def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=False)
-def get_norm_of_vec(vec: np.ndarray) -> np.ndarray:
+def get_norm_of_vec(vec: np.ndarray) -> np.ndarray|float:
     """Return the norm squared of a N-dimensional points (arrays).
     
     Parameters
