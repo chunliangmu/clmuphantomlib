@@ -237,7 +237,10 @@ class MyPhantomDataFrames:
         
         """
         # do reset xyz
-        if   what in {'CoM'}:
+        if not what:
+            # do nothing
+            return self
+        elif what in {'CoM'}:
             self.loc_CoM = self.get_loc_CoM()
             reset_xyz_by_arr = self.loc_CoM
         elif what in {'R1', 'primary'}:
@@ -245,7 +248,7 @@ class MyPhantomDataFrames:
         else:
             if is_verbose(verbose, 'err'):
                 say('err', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
-                    f"Unknown coordinates cetner reseting center str {what = }",
+                    f"Unknown coordinates center reseting center str {what = }",
                     "Action Cancelled.")
             return self
             
