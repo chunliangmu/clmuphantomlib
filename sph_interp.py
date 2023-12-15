@@ -91,20 +91,39 @@ def get_no_neigh(
 
     
     # init
-    npart = len(sdf)
-    if kernel is None:
-        kernel = sdf.kernel
+    if kernel is None: kernel = sdf.kernel
     kernel_rad = float(kernel.get_radius())
-    #if hfact is None:
-    #    hfact = float(sdf.params['hfact'])
     locs = np.array(locs, copy=False, order='C')
     xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
     hs   = np.array(sdf['h'], copy=False, order='C')                # (npart,)-shaped array
+    #hw_rad = kernel_rad * hs    # h * w_rad
+    nlocs = locs.shape[0]
+    npart = xyzs.shape[0]
 
+    
+    # sanity checks
+    if is_verbose(verbose, 'warn'):
+        if ndim != 3:
+            say('warn', 'get_sph_interp()', verbose,
+                f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
+                "if the simulation is 3D, this means that the following calculations will be wrong.",
+                "Are you sure you know what you are doing?",
+            )
+        if xyzs.shape != (npart, ndim):
+            say('warn', 'get_sph_interp()', verbose,
+                f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
+                "This is not supposed to happen and means that the following calculations will be wrong.",
+                "Please check input to this function.",
+            )
 
+    
+    ans = np.zeros(nlocs, dtype=int)
+    for i in range(nlocs):
+        ans[i] = np.count_nonzero(
+            np.sum((locs[i] - xyzs)**2)**0.5 / hs[j] <= kernel_rad
+        )
 
-
-    raise NotImplementedError
+    return ans
 
 
 
@@ -271,9 +290,9 @@ def get_sph_interp_phantom(
 
     
     # fix input shapes
+    do_squeeze = False
     if locs.ndim == 1:
         locs = locs[np.newaxis, :]
-    do_squeeze = False
     if vals.ndim == 1:
         vals = vals[:, np.newaxis]
         do_squeeze = True
