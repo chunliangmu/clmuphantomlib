@@ -95,9 +95,9 @@ class MyPhantomDataFrames:
         job_name='', file_index=0,
         calc_params : list = [],
         calc_params_params : dict = {},
-        reset_xyz_by_CoM : bool = False,
         reset_xyz_by : str = "",
         verbose : int = 0,
+        reset_xyz_by_CoM : bool = False,
     ):
         """
         Read phantom data.
@@ -177,7 +177,7 @@ class MyPhantomDataFrames:
         self._update_units()
         if is_verbose(verbose, 'debug'):
             say(
-                'debug', 'mupl.MyPhantomDataFrames.read()', verbose,
+                'debug', 'MyPhantomDataFrames.read()', verbose,
                 *[f"{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}" for i in ['dist', 'mass', 'time']],
                 f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }\n",
                 f"Center of mass location: {self.loc_CoM = }\n",
@@ -194,25 +194,8 @@ class MyPhantomDataFrames:
                     f"CoM significantly deviates from the origin with distance of {get_r_from_loc(self.loc_CoM)}.",
                     "Consider use reset_xyz_by_CoM=True option when read?",
                 )
-        else:
-            # do reset xyz
-            if reset_xyz_by == "CoM":
-                reset_xyz_by_arr = self.loc_CoM
-            elif reset_xyz_by in ["R1", "primary"]:
-                reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
-                
-            if verbose >= 2: print(f"*   Note: Reseting Origin to {reset_xyz_by}...")
-            
-            for sdf in self.sdfs:
-                sdf['x'] -= reset_xyz_by_arr[0]
-                sdf['y'] -= reset_xyz_by_arr[1]
-                sdf['z'] -= reset_xyz_by_arr[2]
-            self.loc_CoM = self.get_loc_CoM()
-            
-            if verbose >= 2: print(f"    Note: CoM location is now: {self.loc_CoM = }")
-            if verbose and reset_xyz_by == "CoM" and get_r_from_loc(self.loc_CoM) > 1e-5:
-                print(f"*   Warning: CoM is not close to origin {get_r_from_loc(self.loc_CoM) = }")
-
+        self.reset_xyz_by(reset_xyz_by, verbose=verbose)
+        
         
         # safety tests
         if 'kappa' in self.data['gas'].columns:
@@ -228,7 +211,7 @@ class MyPhantomDataFrames:
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=} ",
                     "However in phantom kappa is assumed to be in cgs unit.",
-                    "If so, please CONVERT KAPPA MANNUALLY into PHANTOM UNITS, such as:",
+                    "If so, please CONVERT KAPPA MANNUALLY into PHANTOM units BEFORE proceeding, e.g.:",
                     "\tmpdf.data['gas']['kappa'] = ", 
                     "\tmupl.get_val_in_unit(mpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])",
                 )
@@ -239,17 +222,59 @@ class MyPhantomDataFrames:
         self.calc_sdf_params(calc_params=calc_params, calc_params_params=calc_params_params, verbose=verbose)
         
         return self
+
+
+    def reset_xyz_by(
+        self,
+        what: str = '',
+        verbose: int = 3,
+    ):
+        """
+        Reset coordinates to center on the specified thing.
+
+        Parameters
+        ----------
+        
+        """
+        # do reset xyz
+        if   what in {'CoM'}:
+            self.loc_CoM = self.get_loc_CoM()
+            reset_xyz_by_arr = self.loc_CoM
+        elif what in {'R1', 'primary'}:
+            reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
+        else:
+            if is_verbose(verbose, 'err'):
+                say('err', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+                    f"Unknown coordinates cetner reseting center str {what = }",
+                    "Action Cancelled.")
+            return self
+            
+        if is_verbose(verbose, 'note'):
+            say('note', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+                f"Reseting Origin to {what} ({reset_xyz_by_arr})...")
+        
+        for sdf in self.sdfs:
+            sdf['x'] -= reset_xyz_by_arr[0]
+            sdf['y'] -= reset_xyz_by_arr[1]
+            sdf['z'] -= reset_xyz_by_arr[2]
+        self.loc_CoM = self.get_loc_CoM()
+        
+        if is_verbose(verbose, 'note'):
+            say('note', 'MyPhantomDataFrames.reset_xyz_by()', verbose, f"CoM location is now {self.loc_CoM}")
+        if is_verbose(verbose, 'warn') and what in {'', "CoM"} and get_r_from_loc(self.loc_CoM) > 1e-5:
+            say('warn', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+                f"CoM is not close to origin {get_r_from_loc(self.loc_CoM) = }")
     
     
     def calc_sdf_params(
         self,
-        calc_params : list = [],
+        calc_params: list = [],
         calc_params_params : dict = {
             'ieos': None,
             'overwrite': False,
             'kappa_translate_from_cgs_units': False,
         },
-        verbose : int = 0,
+        verbose: int = 3,
     ):
         """
         Calculate density, mass, velocity, and more for self.data['gas'].
