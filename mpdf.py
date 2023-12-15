@@ -66,7 +66,7 @@ class MyPhantomDataFrames:
         self._update_units(verbose=verbose)
 
         
-    def _update_units(self, verbose:int=1):
+    def _update_units(self, verbose:int=3):
         """Update self.units based on mass, dist, time, & temp in self.units"""
         self.units = complete_units_dict(self.units)
         
@@ -96,7 +96,7 @@ class MyPhantomDataFrames:
         calc_params : list = [],
         calc_params_params : dict = {},
         reset_xyz_by : str = "",
-        verbose : int = 0,
+        verbose : int = 3,
         reset_xyz_by_CoM : bool = False,
     ):
         """
@@ -143,8 +143,8 @@ class MyPhantomDataFrames:
             return self
         self.file_index = file_index
         filename = self.get_filename()
-        if is_verbose(verbose, 'note'):
-            say('note', 'MyPhantomDataFrames.read()', verbose, f"\n\tReading {filename=}\n")
+        if is_verbose(verbose, 'warn'):
+            say('note', 'MyPhantomDataFrames.read()', verbose, f"\n\n\tReading {filename=}\n\n")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
