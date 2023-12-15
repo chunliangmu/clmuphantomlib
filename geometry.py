@@ -23,19 +23,6 @@ from numba import jit
 
 
 @jit(nopython=False)
-def get_r_from_loc(loc) -> float:
-    """Return norm of a 3D vector.
-    
-    Parameters
-    ----------
-    loc: 3-element list/array.
-    """
-    if len(loc) != 3:
-        raise ValueError(f"Input vector dim {len(loc)} is not 3.")
-    return (loc[0]**2 + loc[1]**2 + loc[2]**2)**0.5
-
-
-@jit(nopython=False)
 def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
     """Return distance squared between two N-dimensional points (arrays).
     
@@ -46,6 +33,33 @@ def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
     #pt1 = np.array(pt1, copy=False)
     #pt2 = np.array(pt2, copy=False)
     return np.sum((pt2 - pt1)**2, axis=-1)
+
+
+@jit(nopython=False)
+def get_norm_of_vec(vec: np.ndarray) -> np.ndarray:
+    """Return the norm squared of a N-dimensional points (arrays).
+    
+    Parameters
+    ----------
+    vec: (..., N)-dimensional numpy array.
+    """
+    return np.sum(vec**2, axis=-1)**0.5
+
+
+
+#@jit(nopython=False)
+#def get_r_from_loc(loc) -> float:
+#    """[Deprecated] Return norm of a 3D vector.
+#
+#    Deprecated: Use get_norm_of_vec(vec) instead
+#    
+#    Parameters
+#    ----------
+#    loc: 3-element list/array.
+#    """
+#    return get_norm_of_vec(loc)
+
+
 
 
 @jit(nopython=False)

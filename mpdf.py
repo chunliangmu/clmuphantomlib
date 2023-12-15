@@ -17,7 +17,7 @@ Owner: Chunliang Mu
 #  import (my libs)
 from .log import say, is_verbose
 from .units_util import DEFAULT_UNITS, complete_units_dict, set_as_quantity, get_units_field_name
-from .geometry import get_r_from_loc
+from .geometry import get_norm_of_vec
 
 #  import (general)
 import numpy as np
@@ -188,10 +188,10 @@ class MyPhantomDataFrames:
             reset_xyz_by = "CoM"
         
         if not reset_xyz_by:
-            if is_verbose(verbose, 'note') and get_r_from_loc(self.loc_CoM) > 1:
+            if is_verbose(verbose, 'note') and get_norm_of_vec(self.loc_CoM) > 1:
                 say(
                     'note', 'MyPhantomDataFrames.read()', verbose,
-                    f"CoM significantly deviates from the origin with distance of {get_r_from_loc(self.loc_CoM)}.",
+                    f"CoM significantly deviates from the origin with distance of {get_norm_of_vec(self.loc_CoM)}.",
                     "Consider use reset_xyz_by_CoM=True option when read?",
                 )
         self.reset_xyz_by(reset_xyz_by, verbose=verbose)
@@ -261,9 +261,9 @@ class MyPhantomDataFrames:
         
         if is_verbose(verbose, 'note'):
             say('note', 'MyPhantomDataFrames.reset_xyz_by()', verbose, f"CoM location is now {self.loc_CoM}")
-        if is_verbose(verbose, 'warn') and what in {'', "CoM"} and get_r_from_loc(self.loc_CoM) > 1e-5:
+        if is_verbose(verbose, 'warn') and what in {'', "CoM"} and get_norm_of_vec(self.loc_CoM) > 1e-5:
             say('warn', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
-                f"CoM is not close to origin {get_r_from_loc(self.loc_CoM) = }")
+                f"CoM is not close to origin {get_norm_of_vec(self.loc_CoM) = }")
     
     
     def calc_sdf_params(
