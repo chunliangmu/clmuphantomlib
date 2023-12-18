@@ -53,11 +53,14 @@ def get_no_neigh(
     sdf      : sarracen.sarracen_dataframe.SarracenDataFrame,
     locs     : np.ndarray,
     kernel   : sarracen.kernels.BaseKernel = None,
+    kernel_rad: float = None,
     ndim     : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
     verbose  : int = 3,
 ) -> np.ndarray|int:
     """Get the number of neighbour particles.
+
+    Pending optimization (add kd-tree?)
     
     Parameters
     ----------
@@ -69,8 +72,10 @@ def get_no_neigh(
         (3) or (..., 3)-shaped array determining the location for neighbour counting.
         
     kernel: sarracen.kernels.base_kernel
-        Smoothing kernel for SPH data interpolation.
-        If None, will use the one in sdf.
+    kernel_rad: float
+        radius of the smoothing kernel in unit of smoothing length
+        If None, will infer from kernel; if kernel is also None, will use the one in sdf.
+        
 
     ndim: int
         dimension of the space. Default is 3 (for 3D).
@@ -91,15 +96,21 @@ def get_no_neigh(
 
     
     # init
-    if kernel is None: kernel = sdf.kernel
-    kernel_rad = float(kernel.get_radius())
+    if kernel_rad is None:
+        if kernel is None:
+            kernel = sdf.kernel
+        kernel_rad = float(kernel.get_radius())
     locs = np.array(locs, copy=False, order='C')
     xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
     hs   = np.array(sdf['h'], copy=False, order='C')                # (npart,)-shaped array
     #hw_rad = kernel_rad * hs    # h * w_rad
+
+    # fix input shapes
+    if locs.ndim == 1:
+        locs = locs[np.newaxis, :]
+
     nlocs = locs.shape[0]
     npart = xyzs.shape[0]
-
     
     # sanity checks
     if is_verbose(verbose, 'warn'):
@@ -120,7 +131,7 @@ def get_no_neigh(
     ans = np.zeros(nlocs, dtype=int)
     for i in range(nlocs):
         ans[i] = np.count_nonzero(
-            np.sum((locs[i] - xyzs)**2)**0.5 / hs[j] <= kernel_rad
+            np.sum((locs[i] - xyzs)**2, axis=-1)**0.5 / hs <= kernel_rad
         )
 
     return ans
@@ -189,8 +200,6 @@ def _get_sph_interp_phantom_np(
                     ans_s[i   ] += w_q * vals[j]
                     ans_w[i, 0] += w_q
     return ans_s / ans_w
-
-
 
 
 
