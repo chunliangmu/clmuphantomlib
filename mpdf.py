@@ -212,8 +212,8 @@ class MyPhantomDataFrames:
                     f"We here assume kappa is in phantom units {self.units['opacity']=} ",
                     "However in phantom kappa is assumed to be in cgs unit.",
                     "If so, please CONVERT KAPPA MANNUALLY into PHANTOM units BEFORE proceeding, e.g.:",
-                    "\tmpdf.data['gas']['kappa'] = ", 
-                    "\tmupl.get_val_in_unit(mpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])",
+                    "\tmpdf.data['gas']['kappa'] = mupl.units_util.get_val_in_unit(", 
+                    "\tmpdf.data['gas']['kappa'], units.cm**2/units.g, mpdf.units['opacity'])",
                 )
         
 
