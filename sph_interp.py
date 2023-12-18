@@ -134,7 +134,7 @@ def get_no_neigh(
             np.sum((locs[i] - xyzs)**2, axis=-1)**0.5 / hs <= kernel_rad
         )
 
-    return ans
+    return np.squeeze(ans)
 
 
 

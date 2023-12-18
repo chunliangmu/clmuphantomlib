@@ -196,9 +196,11 @@ def get_photosphere_on_ray(
                 Will always be outputted regardless of in calc_params or not.
             'loc': will return (3,)-shaped numpy array.
                 photophere location.
-            'R1 ': will return float.
+            'R1' : will return float.
                 distance between photosphere location and the ray[0].
                 Could be negative if loc is on the other side of the ray.
+            'nneigh': will return int.
+                Number of neighbour particles of the photosphere loc.
             'rho': will return float.
                 density at the photosphere.
             'u': will return float.
@@ -340,7 +342,7 @@ def get_photosphere_on_ray(
         'is_found': (taus_max > photosphere_tau)
     }
     
-    # get photosphere
+    # get photosphere parameters
     if calc_params:
         # always calc location if anything needs to be calc-ed
         photosphere['loc'] = np.array([
@@ -356,63 +358,65 @@ def get_photosphere_on_ray(
             if 'rho' not in calc_params: calc_params.append('rho')
             if 'u'   not in calc_params: calc_params.append('u')
 
-    # first calc prerequisites
-    calc_these = []
-    for calc_name in calc_params:
-        if   calc_name == 'loc':
-            # already calc-ed
-            pass
-        elif calc_name == 'R1':
-            photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
-        elif calc_name in {'rho', 'u'}:
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
-        else:
-            calc_these.append(calc_name)
-
-    # now the rest
-    for calc_name in calc_these:
-        if calc_name == 'h':
-            if hfact is None: hfact = sdf.params['hfact']
-            if mpart is None: mpart = sdf.params['mass']
-            photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
-        elif calc_name == 'T':
-            if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
-            try:
-                photosphere['T']  = eos.get_temp(
-                    set_as_quantity(photosphere['rho'], sdf_units['density']),
-                    set_as_quantity(photosphere['u'  ], sdf_units['specificEnergy']))
-                if 'temp' in sdf_units:
-                    photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
-                else:
-                    photosphere['T'] = photosphere['T'].value
-            except ValueError:
-                # eos interp could go out of bounds if it's a tabulated EoS
-                # which will raise a Value Error
-                photosphere['T'] = np.nan
-        else:
-            # just interpolate it (#IT JUST WORKS)
-            photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], verbose=verbose)
-
-    # add units
-    if return_as_quantity or return_as_quantity is None:
-        for calc_name in photosphere.keys():
-            if calc_name not in {'is_found'}:
-                # find appropriate unit
+        # first calc prerequisites
+        calc_these = []
+        for calc_name in calc_params:
+            if   calc_name == 'loc':
+                # already calc-ed
+                pass
+            elif calc_name == 'R1':
+                photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
+            elif calc_name in {'rho', 'u'}:
+                photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], kernel=kernel, verbose=verbose)
+            elif calc_name in {'nneigh'}:
+                photosphere[calc_name]  = get_no_neigh(sdf, photosphere['loc'], kernel=kernel, verbose=verbose)
+            else:
+                calc_these.append(calc_name)
+    
+        # now the rest
+        for calc_name in calc_these:
+            if calc_name == 'h':
+                if hfact is None: hfact = sdf.params['hfact']
+                if mpart is None: mpart = sdf.params['mass']
+                photosphere['h']  = get_h_from_rho(photosphere['rho'], mpart, hfact)
+            elif calc_name == 'T':
+                if eos   is None: raise ValueError("get_photosphere_on_ray(): Please supply equation of state to calculate temperature.")
                 try:
-                    unit_field_name = get_units_field_name(calc_name)
-                except NotImplementedError:
-                    # failed to find unit type
-                    unit_field_name = None
-                if unit_field_name in sdf_units.keys():
-                    # add units
-                    photosphere[calc_name] = set_as_quantity(photosphere[calc_name], sdf_units[unit_field_name])
-                # errors
-                elif unit_field_name is None:
-                    if is_verbose(verbose, 'warn'):
-                        say('warn', 'get_photosphere_on_ray()', verbose,
-                            f"Cannot find the corresponding unit for {calc_name}. Will return as numpy array instead.")
-                elif return_as_quantity is not None:
-                    raise ValueError(f"Please supply {unit_field_name} in sdf_units.")
+                    photosphere['T']  = eos.get_temp(
+                        set_as_quantity(photosphere['rho'], sdf_units['density']),
+                        set_as_quantity(photosphere['u'  ], sdf_units['specificEnergy']))
+                    if 'temp' in sdf_units:
+                        photosphere['T'] = set_as_quantity_temperature(photosphere['T'], sdf_units['temp']).value
+                    else:
+                        photosphere['T'] = photosphere['T'].value
+                except ValueError:
+                    # eos interp could go out of bounds if it's a tabulated EoS
+                    # which will raise a Value Error
+                    photosphere['T'] = np.nan
+            else:
+                # just interpolate it (#IT JUST WORKS)
+                photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], kernel=kernel, verbose=verbose)
+
+        # add units
+        if return_as_quantity or return_as_quantity is None:
+            for calc_name in photosphere.keys():
+                if calc_name not in {'is_found', 'nneigh'}:
+                    # find appropriate unit
+                    try:
+                        unit_field_name = get_units_field_name(calc_name)
+                    except NotImplementedError:
+                        # failed to find unit type
+                        unit_field_name = None
+                    if unit_field_name in sdf_units.keys():
+                        # add units
+                        photosphere[calc_name] = set_as_quantity(photosphere[calc_name], sdf_units[unit_field_name])
+                    # errors
+                    elif unit_field_name is None:
+                        if is_verbose(verbose, 'warn'):
+                            say('warn', 'get_photosphere_on_ray()', verbose,
+                                f"Cannot find the corresponding unit for {calc_name}. Will return as numpy array instead.")
+                    elif return_as_quantity is not None:
+                        raise ValueError(f"Please supply {unit_field_name} in sdf_units.")
         
         
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
