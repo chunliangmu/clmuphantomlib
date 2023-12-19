@@ -106,7 +106,7 @@ def get_units_field_name(val_name: str) -> str:
         return 'dist'
     elif val_name in {'t', 'time'}:
         return 'time'
-    elif val_name in {'v', 'vx', 'vy', 'vz'}:
+    elif val_name in {'v', 'vx', 'vy', 'vz', 'vr'}:
         return 'speed'
     elif val_name in {'kappa', 'opacity'}:
         return 'opacity'
