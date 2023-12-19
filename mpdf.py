@@ -271,7 +271,7 @@ class MyPhantomDataFrames:
     
     def calc_sdf_params(
         self,
-        calc_params: list = [],
+        calc_params: list|set = [],
         calc_params_params : dict = {
             'ieos': None,
             'overwrite': False,
@@ -293,6 +293,7 @@ class MyPhantomDataFrames:
                 'temperature' or 'T'
                 'opacity' or 'kappa' (a simplified formula for gas opacity: 2e-4 cm2/g for T<6000, 0.2(1+X) cm2/g for T>6000)
                 'R1': distance to the primary star (self.data['sink'].iloc[0])
+                'vr': speed relative to the origin of the coordinate system (positive for expansion/escaping, negative for contracting) 
                 
         calc_params_params: dict
             Parameters for calc_params.
@@ -450,6 +451,11 @@ class MyPhantomDataFrames:
             data_star = self.data['sink'].iloc[0]
             sdf['R1'] = ((sdf['x'] - data_star['x'])**2 + (sdf['y'] - data_star['y'])**2 + (sdf['z'] - data_star['z'])**2)**0.5
 
+        if 'vr' in calc_params:
+            # speed relative to the origin of the coordinate system
+            v_vecs = np.array(sdf[['vx', 'vy', 'vz']])
+            r_vecs = np.array(sdf[[ 'x',  'y',  'z']])
+            sdf['vr'] = np.sum(v_vecs * r_vecs, axis=1) / np.sum(r_vecs**2, axis=1)**0.5
         return self
     
     
