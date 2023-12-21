@@ -313,7 +313,7 @@ def get_sph_interp_phantom(
 
     # warn if try to interp unexpected quantities
     if is_verbose(verbose, 'warn'):
-        if val_names not in ['rho', 'u', 'vx', 'vy', 'vz']:
+        if val_names not in ['rho', 'u', 'vx', 'vy', 'vz', 'vr']:
             say('warn', 'get_sph_interp()', verbose,
                 "Kernel interpolation should be used with conserved quantities (density, energy, momentum),",
                 f"but you are trying to do it with '{val_names}', which could lead to problematic results."
