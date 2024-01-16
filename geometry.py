@@ -15,6 +15,7 @@ Owner: Chunliang Mu
 
 
 import numpy as np
+from numpy import pi
 from numba import jit
 
 
@@ -87,4 +88,38 @@ def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
     t_0 = np.sum((pt0 - pt1) * (pt2 - pt1), axis=-1) / np.sum((pt2 - pt1)**2, axis=-1)
     X_t = pt1 + t_0.reshape((*t_0.shape,1)) * (pt2 - pt1)
     return X_t
+
+
+
+
+
+
+@jit(nopython=True)
+def get_rand_unit_vecs(no_vec: int, cos_theta_mid: None|float = None, cos_theta_delta: None|float = None) -> np.ndarray:
+    """Generate a series of unit vectors pointing at random directions.
+        
+    Parameters
+    ----------
+    no_vec: int
+        number of unit vecs to be generated
+    cos_theta_mid  : (optional) float in (-1., 1.)
+    cos_theta_delta: (optional) float in [ 0., 1.)
+        if both supplied, will only generate directions with cos_theta in between cos_theta_mid +/- cos_theta_delta
+        Warning: results may contain np.nan if cos_theta_mid +/- cos_theta_delta falls outside the range of [-1., 1.]
+
     
+    Returns
+    -------
+    unit_vecs: (no_vec, 3)-shaped array
+    """
+    phis       = np.random.uniform( 0., 2*pi, no_vec)
+    cos_thetas = np.random.uniform(-1.,   1., no_vec)
+    if cos_theta_mid is not None and cos_theta_delta is not None:
+        cos_thetas = cos_theta_mid + cos_thetas * cos_theta_delta
+    sin_thetas = (1 - cos_thetas**2)**0.5
+    unit_vecs = np.column_stack((
+        sin_thetas * np.sin(phis),
+        sin_thetas * np.cos(phis),
+        cos_thetas,
+    ))
+    return unit_vecs
