@@ -123,3 +123,28 @@ def get_rand_unit_vecs(no_vec: int, cos_theta_mid: None|float = None, cos_theta_
         cos_thetas,
     ))
     return unit_vecs
+
+
+
+def get_rays(orig_vecs: np.ndarray, unit_vecs: np.ndarray) -> np.ndarray:
+    """Generate ray object from origin vector and unit vector.
+
+    orig_vecs should have the same shape as unit_vecs.
+        alternatively, unit_vecs can be of the shape (ndim,) and orig_vecs can be (..., ndim).
+        if orig_vecs is of the shape (ndim,), then the unit_vecs cannot have more than 2 axes.
+        (... just use the same shape)
+    
+
+    Parameters
+    ----------
+    orig_vecs: (ndim,) or (no_ray, ndim)-shaped np.ndarray
+    unit_vecs: (ndim,) or (no_ray, ndim)-shaped np.ndarray
+
+    Returns
+    -------
+    (2, ndim) or (no_ray, 2, ndim)-shaped np.ndarray
+    """
+    if   len(orig_vecs.shape) == 1 and len(unit_vecs.shape) == 2:
+        return np.array([[orig_vecs, orig_vecs + unit_vec] for unit_vec in unit_vecs])
+    else:
+        return np.stack((orig_vecs, orig_vecs + unit_vecs), axis=-2)
