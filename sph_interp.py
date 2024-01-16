@@ -199,7 +199,6 @@ def _get_sph_interp_phantom_np_basic(
     npart = vals.shape[0]
     nvals = vals.shape[1]
     ans_s = np.zeros((nlocs, nvals), dtype=vals.dtype)
-    ans_w = np.zeros((nlocs, 1))
 
     # h * w_rad
     hw_rad = kernel_rad * hs
@@ -213,8 +212,8 @@ def _get_sph_interp_phantom_np_basic(
                 if q_ij <= kernel_rad:
                     w_q = kernel_w(q_ij, ndim)
                     ans_s[i   ] += w_q * vals[j]
-                    ans_w[i, 0] += w_q
-    return ans_s / ans_w
+    return ans_s / (hfact**d)
+
 
 
 
@@ -263,6 +262,7 @@ def _get_sph_interp_phantom_np(
     npart = vals.shape[0]
     nvals = vals.shape[1]
     ans_s = np.zeros((nlocs, nvals), dtype=vals.dtype)
+    ans_w = np.zeros((nlocs, 1))
 
     # h * w_rad
     hw_rad = kernel_rad * hs
@@ -276,7 +276,8 @@ def _get_sph_interp_phantom_np(
                 if q_ij <= kernel_rad:
                     w_q = kernel_w(q_ij, ndim)
                     ans_s[i   ] += w_q * vals[j]
-    return ans_s / (hfact**d)
+                    ans_w[i, 0] += w_q
+    return ans_s / ans_w
 
 
 
