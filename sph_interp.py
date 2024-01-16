@@ -46,6 +46,19 @@ def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int =
     return hfact * (mpart / rho)**(1./ndim)
 
 
+@jit(nopython=False)
+def get_rho_from_h(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+    """Getting density from smoothing length.
+    
+    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    rho = hfact**ndim * (m / h**ndim)
+    for ndim-dimension and hfact the constant.
+
+    No safety check is performed- make sure neither hfact and h are not in int datatype! 
+    """
+    return mpart * (hfact / h)**ndim
+
+
 
 
 @jit(nopython=False)
@@ -143,6 +156,72 @@ def get_no_neigh(
 
 
 @jit(nopython=True)
+def _get_sph_interp_phantom_np_basic(
+    locs : np.ndarray,
+    vals : np.ndarray,
+    xyzs : np.ndarray,
+    hs   : np.ndarray,
+    hfact: float,
+    kernel_w  : numba.core.registry.CPUDispatcher,
+    kernel_rad: float,
+    ndim : int = 3,
+) -> np.ndarray:
+    """SPH interpolation subprocess. Most basic form.
+
+    WARNING:
+        * This func requires a very specific input array shape, and it does NOT do sanity check!
+        * kernel_rad MUST be float instead of int!
+        * All input numpy array must be in 'C' order (because stupid numba doesn't support 'F' order)
+        * all inputs in locs, xyzs, hs must be finite (no np.inf nor np.nan)
+
+    Using numpy array as input and numba for acceleration.
+    
+    *** THIS FUNC DOES NOT DO SAINTY CHECK *** 
+
+
+    Parameters
+    ----------
+    locs : (nlocs, ndim )-shaped np.ndarray,
+    vals : (npart, nvals)-shaped np.ndarray,
+    xyzs : (npart, ndim )-shaped np.ndarray,
+    hs   : (npart,      )-shaped np.ndarray,
+    hfact: float,
+    kernel_w  : sarracen.kernels.BaseKernel.w
+    kernel_rad: float
+        smoothing kernel radius in unit of h (outside this w goes to 0)
+    ndim : int = 3
+    
+    Returns
+    -------
+    ans  : (nlocs, nvals)-shaped np.ndarray
+    """
+    nlocs = locs.shape[0]
+    npart = vals.shape[0]
+    nvals = vals.shape[1]
+    ans_s = np.zeros((nlocs, nvals), dtype=vals.dtype)
+    ans_w = np.zeros((nlocs, 1))
+
+    # h * w_rad
+    hw_rad = kernel_rad * hs
+
+    for j in range(npart):
+        # pre-select
+        maybe_neigh = np.abs(locs - xyzs[j][np.newaxis, :]) < hw_rad[j]
+        for i in range(nlocs):
+            if np.all(maybe_neigh[i]):
+                q_ij = np.sum((locs[i] - xyzs[j])**2)**0.5 / hs[j]
+                if q_ij <= kernel_rad:
+                    w_q = kernel_w(q_ij, ndim)
+                    ans_s[i   ] += w_q * vals[j]
+                    ans_w[i, 0] += w_q
+    return ans_s / ans_w
+
+
+
+
+
+
+@jit(nopython=True)
 def _get_sph_interp_phantom_np(
     locs : np.ndarray,
     vals : np.ndarray,
@@ -184,7 +263,6 @@ def _get_sph_interp_phantom_np(
     npart = vals.shape[0]
     nvals = vals.shape[1]
     ans_s = np.zeros((nlocs, nvals), dtype=vals.dtype)
-    ans_w = np.zeros((nlocs, 1))
 
     # h * w_rad
     hw_rad = kernel_rad * hs
@@ -198,8 +276,7 @@ def _get_sph_interp_phantom_np(
                 if q_ij <= kernel_rad:
                     w_q = kernel_w(q_ij, ndim)
                     ans_s[i   ] += w_q * vals[j]
-                    ans_w[i, 0] += w_q
-    return ans_s / ans_w
+    return ans_s / (hfact**d)
 
 
 
@@ -214,6 +291,7 @@ def get_sph_interp_phantom(
     #hfact    : float = None,
     ndim     : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
+    #method   : str = 'improved',
     verbose  : int = 3,
 ) -> np.ndarray:
     """SPH interpolation.
@@ -231,19 +309,19 @@ def get_sph_interp_phantom(
 
     Theories:
     In SPH kernel interpolation theories, for arbitrary quantity A,
-        \braket{A} (\mathbf{r}) 
-        \equiv \sum_{j} \frac{m_j A_j}{\rho_j h_j^d} w(q_j(\mathbf{r}))
-        = \frac{1}{h_\mathrm{fact}^d} \sum_{j} A_j w(q_j(\mathbf{r}))
+        \\braket{A} (\\mathbf{r}) 
+        \\equiv \sum_{j} \\frac{m_j A_j}{\\rho_j h_j^d} w(q_j(\\mathbf{r}))
+        = \\frac{1}{h_\\mathrm{fact}^d} \\sum_{j} A_j w(q_j(\\mathbf{r}))
     where rho = hfact**d * (m / h**d) is assumed.
 
     Taylor expansion of the above shows that
-        \braket{A}
-        = A \braket{1} + \nabla A \cdot (\braket{\mathbf{r}} - \mathbf{r}\braket{1}) + \mathcal{O}(h^2)
+        \\braket{A}
+        = A \\braket{1} + \\nabla A \\cdot (\\braket{\\mathbf{r}} - \\mathbf{r}\\braket{1}) + \\mathcal{O}(h^2)
 
     So,
         A
-        \approx \frac{\braket{A}}{\braket{1}}
-        = \frac{ \sum_{j} A_j w(q_j(\mathbf{r})) }{\sum_{j} w(q_j(\mathbf{r}))}
+        \\approx \\frac{\\braket{A}}{\\braket{1}}
+        = \\frac{ \\sum_{j} A_j w(q_j(\\mathbf{r})) }{\\sum_{j} w(q_j(\\mathbf{r}))}
     
         
     
@@ -313,10 +391,16 @@ def get_sph_interp_phantom(
 
     # warn if try to interp unexpected quantities
     if is_verbose(verbose, 'warn'):
-        if val_names not in ['rho', 'u', 'vx', 'vy', 'vz', 'vr']:
+        val_names_set = {val_names} if isinstance(val_names, str) else set(val_names)
+        if val_names_set.difference({'rho', 'u', 'vx', 'vy', 'vz', 'vr'}):
             say('warn', 'get_sph_interp()', verbose,
                 "Kernel interpolation should be used with conserved quantities (density, energy, momentum),",
-                f"but you are trying to do it with '{val_names}', which could lead to problematic results."
+                f"but you are trying to do it with '{val_names}', which could lead to problematic results.",
+            )
+        if 'rho' in val_names_set:
+            say('warn', 'get_sph_interp()', verbose,
+                "You are kernel interpolating density 'rho'.",
+                "Consider using get_rho_from_h() instead to directly calc density from smoothing length, as phantom itself would have done.",
             )
         if ndim != 3:
             say('warn', 'get_sph_interp()', verbose,
