@@ -212,7 +212,7 @@ def _get_sph_interp_phantom_np_basic(
                 if q_ij <= kernel_rad:
                     w_q = kernel_w(q_ij, ndim)
                     ans_s[i   ] += w_q * vals[j]
-    return ans_s / (hfact**d)
+    return ans_s / (hfact**ndim)
 
 
 
@@ -289,10 +289,10 @@ def get_sph_interp_phantom(
     val_names: str|list,
     locs     : np.ndarray,
     kernel   : sarracen.kernels.BaseKernel = None,
-    #hfact    : float = None,
+    hfact    : float = None,
     ndim     : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
-    #method   : str = 'improved',
+    method   : str = 'improved',
     verbose  : int = 3,
 ) -> np.ndarray:
     """SPH interpolation.
@@ -369,8 +369,6 @@ def get_sph_interp_phantom(
     if kernel is None:
         kernel = sdf.kernel
     kernel_rad = float(kernel.get_radius())
-    #if hfact is None:
-    #    hfact = float(sdf.params['hfact'])
     locs = np.array(locs, copy=False, order='C')
     vals = np.array(sdf[val_names], copy=False, order='C')
     xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
@@ -418,8 +416,15 @@ def get_sph_interp_phantom(
 
 
     # calc
-    ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, kernel_rad, ndim)
-    
+    if method in {'improved'}:
+        ans = _get_sph_interp_phantom_np(locs, vals, xyzs, hs, kernel.w, kernel_rad, ndim)
+    elif method in {'basic'}:
+        if hfact is None:
+            hfact = float(sdf.params['hfact'])
+        ans = _get_sph_interp_phantom_np_basic(locs, vals, xyzs, hs, hfact, kernel.w, kernel_rad, ndim)
+    else:
+        raise ValueError("Unrecognized 'method' parameter. See function doc for help.")
+        
     if do_squeeze:
         ans = np.squeeze(ans)
 
