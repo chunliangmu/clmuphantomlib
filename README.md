@@ -39,7 +39,7 @@ Nevertheless, I hope it helps!
 ## Dependencies
 
 - Python libraries:
-	- `python` (version >= 3.10)
+	- `python3` (version >= 3.10)
 	- `numpy scipy astropy numba matplotlib ipympl moviepy`
 	- `sarracen`
 
