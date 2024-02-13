@@ -22,7 +22,6 @@ Principal Supervisor: Professor Orsola De Marco
 Associate Supervisor: Professor Mark Wardle
 
 
-----------------
 
 
 ## Disclaimer
@@ -35,7 +34,6 @@ I hope it helps.
 **Note: Please cite the sarracen paper if you use this code (see below link for the sarracen repository description), since this code uses sarracen behind the scene.**
 
 
-----------------
 
 
 ## Dependencies
@@ -54,22 +52,17 @@ and then install `sarracen` with pip.
 )
 
 
-----------------
 
 
 ## Externel files
 
-- .gitignore
-	- obtained from https://github.com/github/gitignore/blob/main/Python.gitignore under CC0-1.0 license.
+- `.gitignore`: obtained from https://github.com/github/gitignore/blob/main/Python.gitignore under CC0-1.0 license.
 
 
-----------------
 
 
 ## Useful links
 
-- Phantom
-	- GitHub: https://github.com/danieljprice/phantom
+- `phantom`: GitHub https://github.com/danieljprice/phantom
 
-- Sarracen
-	- GitHub: https://github.com/ttricco/sarracen
+- `sarracen`: GitHub https://github.com/ttricco/sarracen
