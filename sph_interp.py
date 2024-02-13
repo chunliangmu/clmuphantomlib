@@ -168,6 +168,9 @@ def _get_sph_interp_phantom_np_basic(
 ) -> np.ndarray:
     """SPH interpolation subprocess. Most basic form.
 
+    Basic version uses basic kernel interpolation: A =  <A> = \sum_j A_j w(q_j) / h_fact**ndim,
+        with the assumption of Phantom h: rho = hfact**ndim * (m / h**ndim)
+
     WARNING:
         * This func requires a very specific input array shape, and it does NOT do sanity check!
         * kernel_rad MUST be float instead of int!
@@ -232,6 +235,9 @@ def _get_sph_interp_phantom_np(
 ) -> np.ndarray:
     """SPH interpolation subprocess.
 
+    Improved version corrects for zero-th order error in the basic version: A = <A> / <1> = \sum_j A_j w(q_j) / \sum_j w(q_j),
+        with the assumption of Phantom h: rho = hfact**ndim * (m / h**ndim)
+        
     WARNING:
         * This func requires a very specific input array shape, and it does NOT do sanity check!
         * kernel_rad MUST be float instead of int!
