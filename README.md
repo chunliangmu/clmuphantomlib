@@ -26,7 +26,7 @@ Associate Supervisor: Professor Mark Wardle
 
 ## Disclaimer
 
-This project is a **work in progress**.
+This project is a *work in progress*.
 No guarrantee that it will work.
 Use it at your own risk.
 Nevertheless, I hope it helps!
