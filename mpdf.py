@@ -148,12 +148,21 @@ class MyPhantomDataFrames:
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
+        if isinstance(self.sdfs, (tuple, list)):
+            self.sdfs = tuple(self.sdfs)
+        elif isinstance(self.sdfs, sarracen.sarracen_dataframe.SarracenDataFrame):
+            self.sdfs = (self.sdfs, )
+        else:
+            say('warn', 'MyPhantomDataFrames.read()', verbose,
+                f"\n\n\tUnexpected type of data just read: {type(self.sdfs)=}, please check code.\n\n")
         
         # set alias
         self.data = {
             'gas' : self.sdfs[0],
-            'sink': self.sdfs[1],
+            #'sink': self.sdfs[1],
         }
+        if len(self.sdfs) >= 2:
+            self.data['sink'] = self.sdfs[1]
         self.params = self.data['gas'].params
         self.time = self.params['time']
         self.gamma = self.params['gamma']
@@ -538,6 +547,7 @@ class MyPhantomDataFrames:
         fig=None, ax=None, do_ax_titles=True,
         savefilename=False, plot_title_suffix='',
         xyz_axis='xyz', xsec=0.0, rendered = 'rho',
+        box_lim: None|float|units.quantity.Quantity = None,
         xlim=None, #(-10000, 10000)*DEFAULT_UNITS['dist'],
         ylim=None, #(-10000, 10000)*DEFAULT_UNITS['dist'],
         cbar=True,
@@ -578,6 +588,10 @@ class MyPhantomDataFrames:
         rendered: str
             the variable to be rendered in the plot.
 
+        box_lim: float or astropy.units.quantity.Quantity
+            if supplied, will overwrite xlim and ylim.
+            Quantity (*** To Be Implemented***)
+        
         xlim, ylim: (float, float) or astropy.units.quantity.Quantity (len==2)
             lim of x & y axis of the plot.
             If Quantity, the unit of x/y axis will be set to its unit. (*** To Be Implemented***)
@@ -624,7 +638,16 @@ class MyPhantomDataFrames:
         sdf = self.data['gas']
         
         # set x/y axis unit
-        if issubclass(type(xlim), units.quantity.Quantity):
+        if box_lim is not None:
+            if isinstance(box_lim, units.quantity.Quantity):
+                xlim = set_as_quantity((-box_lim.value, box_lim.value), box_lim.unit)
+                ylim = xlim
+                raise NotImplementedError()
+            else:
+                xlim = (-box_lim, box_lim)
+                ylim = (-box_lim, box_lim)
+        
+        if isinstance(xlim, units.quantity.Quantity):
             xunit = xlim.unit
             xunit_txt = f" / {xunit.to_string('latex_inline')}"
             xlim = xlim.value
@@ -632,7 +655,7 @@ class MyPhantomDataFrames:
         else:
             xunit = None
             xunit_txt = ''
-        if issubclass(type(ylim), units.quantity.Quantity):
+        if isinstance(ylim, units.quantity.Quantity):
             yunit = ylim.unit
             yunit_txt = f" / {yunit.to_string('latex_inline')}"
             ylim = ylim.value
