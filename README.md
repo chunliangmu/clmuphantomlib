@@ -26,10 +26,10 @@ Associate Supervisor: Professor Mark Wardle
 
 ## Disclaimer
 
-Please note that this library is still under development.
-I am putting the code online in the hope that it would be helpful; but I do NOT guarantee it will work.
-Use it at your own risk!
-I hope it helps.
+This project is a **work in progress**.
+No guarrantee that it will work.
+Use it at your own risk.
+Nevertheless, I hope it helps!
 
 **Note: Please cite the sarracen paper if you use this code (see below link for the sarracen repository description), since this code uses sarracen behind the scene.**
 
