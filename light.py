@@ -59,10 +59,10 @@ def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
 
 @jit(nopython=False)
 def get_optical_depth_by_ray_tracing_3D(
-    sdf : sarracen.SarracenDataFrame,
-    ray : np.ndarray,
+    sdf    : sarracen.SarracenDataFrame,
+    ray    : np.ndarray,
     kernel : sarracen.kernels.BaseKernel = None,
-) -> (np.ndarray, np.ndarray, np.ndarray):
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Get an array of optical depth for a ray traced backwards.
     
     Assuming 3D.
@@ -143,20 +143,23 @@ def get_optical_depth_by_ray_tracing_3D(
 
 #@jit(nopython=False)
 def get_photosphere_on_ray(
-    pts_on_ray, dtaus, pts_order,
-    sdf, ray,
-    calc_params : list = ['loc', 'R1'],
-    hfact : float = None,
-    mpart : float = None,
-    eos   : EoS_Base = None,
-    sdf_units: dict  = None,
-    ray_unit_vec : np.ndarray = None,
-    kernel: sarracen.kernels.base_kernel = None,
-    do_skip_zero_dtau_pts : bool = True,
-    photosphere_tau : float = 1.,
-    return_as_quantity: bool|None = True,
+    pts_on_ray            : np.ndarray,
+    dtaus                 : np.ndarray,
+    pts_order             : np.ndarray,
+    sdf                   : sarracen.SarracenDataFrame,
+    ray                   : np.ndarray,
+    calc_params           : list       = ['loc', 'R1'],
+    hfact                 : float      = None,
+    mpart                 : float      = None,
+    eos                   : EoS_Base   = None,
+    sdf_units             : dict       = None,
+    ray_unit_vec          : np.ndarray = None,
+    kernel                : sarracen.kernels.base_kernel = None,
+    do_skip_zero_dtau_pts : bool       = True,
+    photosphere_tau       : float      = 1.,
+    return_as_quantity    : bool|None  = True,
     verbose : int = 3,
-) -> (dict, (np.ndarray, np.ndarray, np.ndarray)):
+) -> tuple[dict, tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Calc the location where the photosphere intersect with the ray.
 
     Assuming 3D.
