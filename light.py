@@ -23,7 +23,7 @@ from .eos_base import EoS_Base
 
 #  import (general)
 import numpy as np
-from numba import jit
+from numba import jit, prange
 import sarracen
 
 
