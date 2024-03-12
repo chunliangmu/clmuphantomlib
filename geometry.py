@@ -168,10 +168,33 @@ def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
         unit vector of ray
     """
     ray = np.array(ray, copy=False)
+    if len(ray.shape) == 3:
+        return get_rays_unit_vec(rays=ray)
     ray_unit_vec = ray[1, :] - ray[0, :]
     ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2)**0.5
     return ray_unit_vec
 
+
+
+@jit(nopython=False)
+def get_rays_unit_vec(rays: np.ndarray) -> np.ndarray:
+    """Get unit vector of a list of rays.
+    
+    Parameters
+    ----------
+    ray: (M, 2, N)-dimensional array_like, i.e. [pt1, pt2]
+        2 points required to determine a line.
+        The line is described as X(t) = pt1 + t*(pt2-pt1)
+        
+    Returns
+    -------
+    ray_unit_vec: (M, N)-dimensional np.ndarray
+        unit vector of ray
+    """
+    ray = np.array(rays, copy=False)
+    ray_unit_vec = ray[..., 1, :] - ray[..., 0, :]
+    ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2, axis=-1)[:, np.newaxis]**0.5
+    return ray_unit_vec
 
 
 
