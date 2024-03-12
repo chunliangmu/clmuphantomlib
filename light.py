@@ -16,40 +16,20 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import say, is_verbose
-from .geometry import get_dist2_between_2pt, get_closest_pt_on_line
+from .geometry import get_dist2_between_2pt, get_closest_pt_on_line, get_ray_unit_vec
 from .sph_interp import get_sph_interp, get_h_from_rho, get_no_neigh
 from .units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .eos_base import EoS_Base
 
 #  import (general)
 import numpy as np
+import numba
 from numba import jit, prange
 import sarracen
 
 
 
 # Functions
-
-
-@jit(nopython=False)
-def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
-    """Get unit vector of a ray (which is a line).
-    
-    Parameters
-    ----------
-    ray: (2, N)-dimensional array_like, i.e. [pt1, pt2]
-        2 points required to determine a line.
-        The line is described as X(t) = pt1 + t*(pt2-pt1)
-        
-    Returns
-    -------
-    ray_unit_vec: (N,)-dimensional np.ndarray
-        unit vector of ray
-    """
-    ray = np.array(ray, copy=False)
-    ray_unit_vec = ray[1, :] - ray[0, :]
-    ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2)**0.5
-    return ray_unit_vec
 
 
 
