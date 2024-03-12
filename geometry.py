@@ -16,7 +16,9 @@ Owner: Chunliang Mu
 
 import numpy as np
 from numpy import pi
-from numba import jit, types
+import numba
+from numba import jit
+
 
 
 
@@ -113,9 +115,9 @@ def get_dist2_from_pts_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|
 
 
 @jit(
-    types.float64(
-        types.Array(types.float64, 1, 'A', readonly=True),
-        types.Array(types.float64, 2, 'A', readonly=True),
+    numba.types.float64(
+        numba.types.Array(numba.types.float64, 1, 'A', readonly=True),
+        numba.types.Array(numba.types.float64, 2, 'A', readonly=True),
     ),
     nopython=True)
 def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float64:
@@ -145,6 +147,30 @@ def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float6
     X_t = pt1 + t_0 * (pt2 - pt1)
     # get distance between these two points
     return np.sum((X_t - pt0)**2, axis=-1)
+
+
+
+
+
+@jit(nopython=False)
+def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
+    """Get unit vector of a ray (which is a line).
+    
+    Parameters
+    ----------
+    ray: (2, N)-dimensional array_like, i.e. [pt1, pt2]
+        2 points required to determine a line.
+        The line is described as X(t) = pt1 + t*(pt2-pt1)
+        
+    Returns
+    -------
+    ray_unit_vec: (N,)-dimensional np.ndarray
+        unit vector of ray
+    """
+    ray = np.array(ray, copy=False)
+    ray_unit_vec = ray[1, :] - ray[0, :]
+    ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2)**0.5
+    return ray_unit_vec
 
 
 
