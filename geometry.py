@@ -16,7 +16,7 @@ Owner: Chunliang Mu
 
 import numpy as np
 from numpy import pi
-from numba import jit
+from numba import jit, types
 
 
 
@@ -92,7 +92,7 @@ def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=False)
-def get_dist2_from_pt_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|np.float64:
+def get_dist2_from_pts_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|np.float64:
     """Return the distance squared between a (series of) point and a line.
     
     Parameters
@@ -110,6 +110,41 @@ def get_dist2_from_pt_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|n
     """
     return get_dist2_between_2pt(pt0, get_closest_pt_on_line(pt0, line))
 
+
+
+@jit(
+    types.float64(
+        types.Array(types.float64, 1, 'A', readonly=True),
+        types.Array(types.float64, 2, 'A', readonly=True),
+    ),
+    nopython=True)
+def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float64:
+    """Return the distance squared between ONE point and a line.
+
+    Read-only input version.
+    No sanity check. Assumes specific input array shape.
+    
+    Parameters
+    ----------
+    pt0: N-shaped numpy array.
+        An N-dimensional point, or M points of N dimensions.
+    
+    line: (2, N)-shaped array_like, i.e. [pt1, pt2]
+        2 points required to determine a line.
+        The line is described as X(t) = pt1 + t*(pt2-pt1)
+        
+    Returns
+    -------
+    dist2: np.float64
+    """
+
+    # get closest point on line
+    pt1 = line[0] #np.array(line[0], copy=False)
+    pt2 = line[1] #np.array(line[1], copy=False)
+    t_0 = np.sum((pt0 - pt1) * (pt2 - pt1), axis=-1) / np.sum((pt2 - pt1)**2, axis=-1)
+    X_t = pt1 + t_0 * (pt2 - pt1)
+    # get distance between these two points
+    return np.sum((X_t - pt0)**2, axis=-1)
 
 
 
