@@ -16,7 +16,7 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from .log import say, is_verbose
-from .geometry import get_dist2_between_2pt, get_closest_pt_on_line, get_ray_unit_vec
+from .geometry import get_dist2_between_2pt, get_closest_pt_on_line, get_dist2_from_pt_to_line_nb, get_ray_unit_vec, get_rays_unit_vec
 from .sph_interp import get_sph_interp, get_h_from_rho, get_no_neigh
 from .units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
 from .eos_base import EoS_Base
@@ -403,3 +403,176 @@ def get_photosphere_on_ray(
         
         
     return photosphere, (pts_waypts, pts_waypts_t, taus_waypts)
+
+
+
+
+
+
+
+
+
+
+@jit(nopython=True, parallel=True)
+def _integrate_along_ray_grid_sub_parallel(
+    pts_ordered          : np.ndarray,    # (npart, 3)-shaped
+    hs_ordered           : np.ndarray,    # (npart,  )-shaped
+    mkappa_div_h2_ordered: np.ndarray,    # (npart,  )-shaped
+    srcfuncs_ordered     : np.ndarray,    # (npart,  )-shaped
+    rays                 : np.ndarray,    # (nray, 2, 3)-shaped
+    kernel_rad           : float,
+    col_kernel           : numba.core.registry.CPUDispatcher,
+    rel_tol              : float = 1e-15, # because float64 is only has only 16 digits accuracy
+):
+    """Sub process for integrate_along_ray_grid(). Numba parallel version (using prange).
+
+    Private function. Assumes specific input type. See source code comments.
+    """
+    #raise NotImplementedError
+
+    nray  = len(rays)
+    ndim  = pts_ordered.shape[-1]
+    anses = np.zeros(nray)
+
+    tol_tau_base = np.log(srcfuncs_ordered.sum()) - np.log(rel_tol)
+
+    # loop over ray
+    for i in prange(nray):
+        ray = rays[i]
+        tau = 0.
+        ans = 0.
+
+        # loop over particles
+        for pt, h, mkappa_div_h2, srcfunc in zip(
+            pts_ordered, hs_ordered, mkappa_div_h2_ordered, srcfuncs_ordered):
+
+            # check if the particle is within range
+            q = get_dist2_from_pt_to_line_nb(pt, ray)**0.5 / h
+            if q < kernel_rad:
+                dtau = mkappa_div_h2 * col_kernel(q, ndim-1)
+                ans += np.exp(-tau) * (1. - np.exp(-dtau)) * srcfunc
+                tau += dtau
+
+                # terminate the calc for this ray if tau is sufficient large
+                #    such that the relative error on ans is smaller than rel_tol
+                # i.e. when tau > np.log(srcfuncs_ordered.sum()) - np.log(rel_tol) - np.log(ans),
+                #    we know that ans[i] - ans[i][k] < rel_tol * ans[i]
+                # see my notes for derivation
+                if tau > tol_tau_base - np.log(ans):
+                    break
+            
+        anses[i] = ans
+    
+    return anses
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@jit(nopython=False)
+def integrate_along_ray_grid(
+    sdf     : sarracen.SarracenDataFrame,
+    srcfuncs: np.ndarray,
+    rays    : np.ndarray,
+    ray_unit_vec: np.ndarray|None = None,
+    kernel  : sarracen.kernels.BaseKernel = None,
+    parallel: bool = True,
+    rel_tol : float = 1e-15,
+    verbose : int = 3,
+):
+    """Integrate source functions along a grid ray (traced backwards), weighted by optical depth.
+    
+    Assuming 3D.
+    Assuming all rays facing the same direction. (with the same ray_unit_vec)
+    
+    
+    Parameters
+    ----------
+    sdf: sarracen.SarracenDataFrame
+        Must contain columns: x, y, z, h, m, kappa
+        
+    rays: (nray, 2, 3)-shaped array
+        Representing the ray trajectory. Currently only straight infinite lines are supported.
+        each ray is of the format:
+        [[begin point], [end point]]
+        where the end point is closer to the observer.
+
+    srcfuncs: 1D array
+        arrays describing the source function for every particle
+        
+    kernel: sarracen.kernels.base_kernel
+        Smoothing kernel for SPH data interpolation.
+        If None, will use the one in sdf.
+
+    parallel: bool
+        If to use the numba parallel function
+
+    rel_tol : float
+        maximum relative error tolerence per ray.
+        Default 1e-15 because float64 is only accurate to ~16th digits.
+    
+    Returns
+    -------
+    pts_on_ray, dtaus, pts_order
+    
+    pts_on_ray: np.ndarray
+        Orthogonal projections of the particles' locations onto the ray.
+    
+    dtaus: np.ndarray
+        Optical depth tau contributed by each particles. In order of the original particles order in the dump file.
+        Remember tau is a dimensionless quantity.
+    
+    pts_order: np.ndarray
+        indices of the particles where dtaus are non-zero.
+        The indices are arranged by distances to the observer, i.e. the particles closest to the observer comes first, 
+        and the furtherest comes last.
+    
+    """
+
+    if is_verbose(verbose, 'warn'):
+        say('warn', 'integrate_along_ray_grid()', verbose,
+           "*** WARNING: This function is a work in progress - output will likely change in the future to output uncertainty estimation as well!")
+
+
+    # init
+    ndim  : int = 3
+    npart : int = len(sdf)
+    if kernel is None: kernel = sdf.kernel
+    kernel_rad = float(kernel.get_radius())
+    col_kernel = kernel.get_column_kernel_func(samples=1000) # w integrated from z
+    if ray_unit_vec is None: ray_unit_vec = get_ray_unit_vec(rays[0])
+    
+    pts    = np.array(sdf[['x', 'y', 'z']], order='C')    # (npart, 3)-shaped array (must be this shape for pts_order sorting below)
+    hs     = np.array(sdf[ 'h'           ], order='C')    # npart-shaped array
+    masses = np.array(sdf[ 'm'           ], order='C')
+    kappas = np.array(sdf[ 'kappa'       ], order='C')
+    srcfuncs = np.array(srcfuncs          , order='C')
+    mkappa_div_h2_arr = masses * kappas / hs**2
+    
+    # sanity check
+    if is_verbose(verbose, 'err') and not np.allclose(ray_unit_vec, get_rays_unit_vec(rays)):
+        raise ValueError(f"Inconsistent ray_unit_vec {ray_unit_vec} with the rays.")
+
+    # (npart-shaped array of the indices of the particles from closest to the observer to the furthest)
+    pts_order             = np.argsort( np.sum(pts * ray_unit_vec, axis=-1) )[::-1]
+    pts_ordered           = pts[     pts_order]
+    hs_ordered            = hs[      pts_order]
+    mkappa_div_h2_ordered = mkappa_div_h2_arr[pts_order]
+    srcfuncs_ordered      = srcfuncs[pts_order]
+
+    anses = _integrate_along_ray_grid_sub_parallel(
+        pts_ordered, hs_ordered, mkappa_div_h2_ordered, srcfuncs_ordered, rays, kernel_rad, col_kernel, rel_tol=rel_tol)
+
+    
+    #raise NotImplementedError
+    
+    return anses
