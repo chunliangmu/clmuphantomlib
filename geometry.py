@@ -24,7 +24,7 @@ from numba import jit
 
 
 @jit(nopython=False)
-def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
+def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray|np.float64:
     """Return distance squared between two N-dimensional points (arrays).
     
     Parameters
@@ -37,7 +37,7 @@ def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray:
 
 
 @jit(nopython=False)
-def get_norm_of_vec(vec: np.ndarray) -> np.ndarray|float:
+def get_norm_of_vec(vec: np.ndarray) -> np.ndarray|np.float64:
     """Return the norm squared of a N-dimensional points (arrays).
     
     Parameters
@@ -89,6 +89,26 @@ def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
     X_t = pt1 + t_0.reshape((*t_0.shape,1)) * (pt2 - pt1)
     return X_t
 
+
+
+@jit(nopython=False)
+def get_dist2_from_pt_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|np.float64:
+    """Return the distance squared between a (series of) point and a line.
+    
+    Parameters
+    ----------
+    pt0: N or (M, N)-shaped numpy array.
+        An N-dimensional point, or M points of N dimensions.
+    
+    line: (2, N)-shaped array_like, i.e. [pt1, pt2]
+        2 points required to determine a line.
+        The line is described as X(t) = pt1 + t*(pt2-pt1)
+        
+    Returns
+    -------
+    dist2: (M,)-shaped np.ndarray or np.float64
+    """
+    return get_dist2_between_2pt(pt0, get_closest_pt_on_line(pt0, line))
 
 
 
