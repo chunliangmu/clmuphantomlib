@@ -423,7 +423,7 @@ def _integrate_along_ray_grid_sub_parallel(
     kernel_rad           : float,
     col_kernel           : numba.core.registry.CPUDispatcher,
     rel_tol              : float = 1e-15, # because float64 is only has only 16 digits accuracy
-):
+) -> np.ndarray: # (nray,)-shaped
     """Sub process for integrate_along_ray_grid(). Numba parallel version (using prange).
 
     Private function. Assumes specific input type. See source code comments.
@@ -488,7 +488,7 @@ def integrate_along_ray_grid(
     parallel: bool = True,
     rel_tol : float = 1e-15,
     verbose : int = 3,
-):
+) -> np.ndarray: # (nray,)-shaped:
     """Integrate source functions along a grid ray (traced backwards), weighted by optical depth.
     
     Assuming 3D.

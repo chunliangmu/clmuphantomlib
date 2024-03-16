@@ -89,14 +89,13 @@ def get_no_neigh(
         radius of the smoothing kernel in unit of smoothing length
         If None, will infer from kernel; if kernel is also None, will use the one in sdf.
         
-
     ndim: int
         dimension of the space. Default is 3 (for 3D).
         DO NOT TOUCH THIS UNLESS YOU KNOW WHAT YOU ARE DOING.
         
     xyzs_names_list: list
         list of names of the columns that represents x, y, z axes (i.e. coord axes names)
-        Make sure to change this if your ndim is something other than 3.
+        Make sure to change this if your ndim is not 3.
 
     verbose: int
         How much warnings, notes, and debug info to be print on screen. 
