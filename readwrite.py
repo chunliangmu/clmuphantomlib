@@ -324,7 +324,7 @@ def json_load(
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
-    return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=True, verbose=verbose, )
+    return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=remove_metadata, verbose=verbose, )
 
 
 
