@@ -475,6 +475,94 @@ def _integrate_along_ray_grid_sub_parallel(
 
 
 
+@jit(nopython=True, parallel=True)
+def _integrate_along_ray_gridxy_sub_parallel(
+    pts_ordered          : np.ndarray,    # (npart, 3)-shaped
+    hs_ordered           : np.ndarray,    # (npart,  )-shaped
+    #masses_ordered       : np.ndarray,    # (npart,  )-shaped
+    #kappas_ordered       : np.ndarray,    # (npart,  )-shaped
+    mkappa_div_h2_ordered: np.ndarray,    # (npart,  )-shaped
+    srcfuncs_ordered     : np.ndarray,    # (npart,  )-shaped
+    rays                 : np.ndarray,    # (nray, 2, 3)-shaped
+    kernel_rad           : float,
+    col_kernel           : numba.core.registry.CPUDispatcher,
+    rel_tol              : float = 1e-15, # because float64 is only has only 16 digits accuracy
+):
+    """Sub process for integrate_along_ray_gridxy(). Numba parallel version (using prange).
+
+    Unit vec must be [0., 0., 1.] (i.e. all rays must point upwards towards +z).
+
+    Private function. Assumes specific input type. See source code comments.
+
+    """
+    #raise NotImplementedError
+
+    nray  = len(rays)
+    npart = len(srcfuncs_ordered)
+    ndim  = pts_ordered.shape[-1]
+    anses = np.zeros(nray)
+
+    # error tolerance of tau (part 1)
+    tol_tau_base = np.log(srcfuncs_ordered.sum()) - np.log(rel_tol)
+
+    # hr = h * kernel_rad
+    hrs_ordered = hs_ordered * kernel_rad
+
+    # loop over ray
+    for i in prange(nray):
+        ray = rays[i]
+        tau = 0.
+        ans = 0.
+
+        #   xy-grid specific solution
+        ray_x = ray[0, 0]
+        ray_y = ray[0, 1]
+        
+        # loop over particles
+        #for pt, hr, mkappa_div_h2, srcfunc in zip(
+        #    pts_ordered, hrs_ordered, mkappa_div_h2_ordered, srcfuncs_ordered):
+        for j in range(npart):
+            pt = pts_ordered[j]
+            hr = hrs_ordered[j]
+            
+            # check if the particle is within range
+            #   general solution
+            #q = get_dist2_from_pt_to_line_nb(pt, ray)**0.5 / h
+            #if q < kernel_rad:
+            #   xy-grid specific solution
+            if ray_x - hr < pt[0] and pt[0] < ray_x + hr and ray_y - hr < pt[1] and pt[1] < ray_y + hr:
+                h = hs_ordered[ j]
+                q = ((pt[0] - ray_x)**2 + (pt[1] - ray_y)**2)**0.5 / h
+                if q < kernel_rad:
+                    
+                    # now do radiative transfer
+                    
+                    mkappa_div_h2 = mkappa_div_h2_ordered[j]
+                    srcfunc = srcfuncs_ordered[j]
+                    
+                    dtau = mkappa_div_h2 * col_kernel(q, ndim-1)
+                    ans += np.exp(-tau) * (1. - np.exp(-dtau)) * srcfunc
+                    tau += dtau
+    
+                    # terminate the calc for this ray if tau is sufficient large
+                    #    such that the relative error on ans is smaller than rel_tol
+                    # i.e. since when tau > np.log(srcfuncs_ordered.sum()) - np.log(rel_tol) - np.log(ans),
+                    #    we know that ans[i] - ans[i][k] < rel_tol * ans[i]
+                    # see my notes for derivation
+                    if tau > tol_tau_base - np.log(ans):
+                        break
+            
+        anses[i] = ans
+    
+    return anses
+
+
+
+
+
+
+
+
 
 
 
@@ -540,8 +628,12 @@ def integrate_along_ray_grid(
 
     if is_verbose(verbose, 'warn'):
         say('warn', 'integrate_along_ray_grid()', verbose,
-           "*** WARNING: This function is a work in progress - output will likely change in the future to output uncertainty estimation as well!")
+            "This function is a work in progress-",
+            "input & output format may change in the future,",
+            "especially to output uncertainty estimation as well!")
 
+    if not parallel:
+        raise NotImplementedError
 
     # init
     ndim  : int = 3
@@ -576,3 +668,118 @@ def integrate_along_ray_grid(
     #raise NotImplementedError
     
     return anses
+
+
+
+
+
+
+
+# work in progress
+
+@jit(nopython=False)
+def integrate_along_ray_gridxy(
+    sdf     : sarracen.SarracenDataFrame,
+    srcfuncs: np.ndarray,
+    rays    : np.ndarray,
+    ray_unit_vec: np.ndarray|None = None,
+    kernel  : sarracen.kernels.BaseKernel = None,
+    parallel: bool = True,
+    rel_tol : float = 1e-15,
+    xyzs_names_list : list = ['x', 'y', 'z'],
+    verbose : int = 3,
+) -> np.ndarray:
+    """Integrate source functions along a grided ray (traced backwards), weighted by optical depth.
+
+    WARNING: FUNCTION MIGHT BE INTEGRATED INTO integrate_along_ray_grid() AND REMOVED LATER
+    
+    Assuming all rays facing +z direction. (with the same ray_unit_vec [0., 0., 1.])
+    
+    
+    Parameters
+    ----------
+    sdf: sarracen.SarracenDataFrame
+        Must contain columns: x, y, z, h, m, kappa
+        
+    rays: (nray, 2, 3)-shaped array
+        Representing the ray trajectory. Currently only straight infinite lines are supported.
+        each ray is of the format:
+        [[begin point], [end point]]
+        where the end point is closer to the observer.
+
+    srcfuncs: 1D array
+        arrays describing the source function for every particle
+        
+    kernel: sarracen.kernels.base_kernel
+        Smoothing kernel for SPH data interpolation.
+        If None, will use the one in sdf.
+
+    parallel: bool
+        If to use the numba parallel function
+
+    rel_tol : float
+        maximum relative error tolerence per ray.
+        Default 1e-15 because float64 is only accurate to ~16th digits.
+        
+    xyzs_names_list: list
+        list of names of the columns that represents x, y, z axes (i.e. coord axes names)
+        MUST INCLUDE ALL THREE AXES LABELS.
+        If only 2 is included, WILL ASSUME IT IS 2D CACULATIONS.
+    
+    Returns
+    -------
+    sies
+    
+    sies: np.ndarray
+        Specific intensities (si) for each ray.
+    
+    """
+
+    if not parallel:
+        raise NotImplementedError
+
+    if is_verbose(verbose, 'warn'):
+        say('warn', 'integrate_along_ray_grid()', verbose,
+            "This function is a work in progress-",
+            "It is highly likely to be removed and integrated into integrate_along_ray_grid() in the future,"
+            "and even if not, the input & output format may still change in the future,",
+            "especially to output uncertainty estimation as well!")
+
+
+    # init
+    npart : int = len(sdf)
+    if kernel is None: kernel = sdf.kernel
+    kernel_rad = float(kernel.get_radius())
+    col_kernel = kernel.get_column_kernel_func(samples=1000) # w integrated from z
+    if ray_unit_vec is None: ray_unit_vec = get_ray_unit_vec(rays[0])
+    
+    pts    = np.array(sdf[xyzs_names_list], order='C')    # (npart, 3)-shaped array (must be this shape for pts_order sorting below)
+    hs     = np.array(sdf[ 'h'           ], order='C')    # npart-shaped array
+    masses = np.array(sdf[ 'm'           ], order='C')
+    kappas = np.array(sdf[ 'kappa'       ], order='C')
+    srcfuncs = np.array(srcfuncs          , order='C')
+    ndim   = pts.shape[-1]
+    mkappa_div_h2_arr = masses * kappas / hs**(ndim-1)
+    
+    # sanity check
+    if is_verbose(verbose, 'err') and not np.allclose(ray_unit_vec, get_rays_unit_vec(rays)):
+        raise ValueError(f"Inconsistent ray_unit_vec {ray_unit_vec} with the rays.")
+
+    if is_verbose(verbose, 'warn') and ndim != 3:
+        say('warn', 'integrate_along_ray_gridxy()', verbose, f"ndim == {ndim} is not 3.")
+
+    # (npart-shaped array of the indices of the particles from closest to the observer to the furthest)
+    pts_order             = np.argsort( np.sum(pts * ray_unit_vec, axis=-1) )[::-1]
+    pts_ordered           = pts[     pts_order]
+    hs_ordered            = hs[      pts_order]
+    mkappa_div_h2_ordered = mkappa_div_h2_arr[pts_order]
+    srcfuncs_ordered      = srcfuncs[pts_order]
+
+    sies = _integrate_along_ray_gridxy_sub_parallel(
+        pts_ordered, hs_ordered, mkappa_div_h2_ordered, srcfuncs_ordered, rays, kernel_rad, col_kernel, rel_tol=rel_tol)
+
+    
+    #raise NotImplementedError
+    
+    return sies
+    
