@@ -365,7 +365,7 @@ def get_sph_interp_phantom(
     Returns
     -------
     ans: float or np.ndarray
-        Depending on the shape of locs, returns float or array of float.
+        Depending on the shape of locs and val_names, returns float or array of float.
     """
 
     
