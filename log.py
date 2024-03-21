@@ -21,7 +21,7 @@ def is_verbose(verbose: int|bool, verbose_req: None|int|str = 1) -> bool:
     if verbose_req is None or isinstance(verbose, bool):
         return verbose
     elif isinstance(verbose_req, str):
-        if verbose_req in {'err', 'error', 'Error'}:
+        if   verbose_req in {'fatal', 'err', 'error', 'Error'}:
             verbose_req = 1
         elif verbose_req in {'warn', 'warning', 'Warn', 'Warning'}:
             verbose_req = 2
@@ -52,7 +52,7 @@ def say(
     ----------
     level: str
         Seriousness of the message. Acecptable input:
-            'error' or 'err'
+            'fatal', 'error' or 'err'
             'warn'
             'note'
             'info', 'debug', or 'debug_info'
@@ -79,7 +79,9 @@ def say(
         verbose_req = None
 
     # get message
-    if   level in {'err', 'error', 'Error'}:
+    if   level in {'fatal'}:
+        msgs_txt = "*** Fatal  :"
+    elif level in {'err', 'error', 'Error'}:
         msgs_txt = "*** Error  :"
     elif level in {'warn', 'warning', 'Warn', 'Warning'}:
         msgs_txt = "**  Warning:"

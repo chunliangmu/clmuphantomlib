@@ -26,6 +26,7 @@ import numpy as np
 import numba
 from numba import jit, prange
 import sarracen
+import itertools
 
 
 
