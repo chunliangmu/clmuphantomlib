@@ -7,6 +7,8 @@ A sub-module for warning / error reporting / messaging things.
 Owner: Chunliang Mu
 """
 
+import inspect
+
 
 
 def is_verbose(verbose: int|bool, verbose_req: None|int|str = 1) -> bool:
@@ -39,9 +41,10 @@ def is_verbose(verbose: int|bool, verbose_req: None|int|str = 1) -> bool:
 
 def say(
     level  : str,
-    orig   : str,
+    orig   : str|int|None,
     verbose: int|bool,
     *msgs  : str,
+    sep    : str = '\n\t',
     verbose_req: int|None = None,
 ) -> str:
     """Log a message as error, warning, note, or debug info.
@@ -58,8 +61,14 @@ def say(
             'info', 'debug', or 'debug_info'
         Will automatically set verbose_req if verbose_req is None.
     
-    orig: str
+    orig: str|int|None
         Origins of this message (typically function name).
+        if None, will use orig=3.
+        if int, will automatically orig levels of function names that called this function.
+
+        *** WARNING: orig as int|None does NOT work for @numba.jit decorated functions!!!
+            In which case please mannually enter function name.
+        
 
     verbose: int
         How much errors, warnings, notes, and debug info to be print on screen.
@@ -69,6 +78,9 @@ def say(
     msgs: str
         The messages to put up.
 
+    sep : str
+        Separator between the msgs.
+
     verbose_req: int
         Required minimum verbose to do anything.
         If 'None' (as str), will treat verbose as a bool and print even if verbose < 0 !
@@ -77,6 +89,12 @@ def say(
         verbose_req = level
     elif verbose_req in {'None'}:
         verbose_req = None
+
+    # decide orig
+    if orig is None:
+        orig = 3
+    if isinstance(orig, int):
+        orig = '::'.join([info.function for info in inspect.stack()][1:orig+1][::-1]) + '()'
 
     # get message
     if   level in {'fatal'}:
@@ -92,7 +110,7 @@ def say(
     else:
         raise ValueError
     msgs_txt += f"    {orig}:\n\t"
-    msgs_txt += '\n\t'.join(msgs)
+    msgs_txt += sep.join(msgs)
 
     if is_verbose(verbose, verbose_req):
         print(msgs_txt)
