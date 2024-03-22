@@ -25,7 +25,7 @@ import struct
 import io
 
 
-CURRENT_VERSION = '0.1'
+CURRENT_VERSION = '0.2'
 
 
 
@@ -102,7 +102,7 @@ def _json_encode(
                 # safety check
                 raise ValueError
             obj['_meta_'] = {
-                '_version_myformatter_': CURRENT_VERSION,
+                '_version_clmuformatter_': CURRENT_VERSION,
                 '_created_time_utc_': datetime.utcnow().isoformat(),
             }
             # note: no need to parse data since we will do it anyway in the next step
