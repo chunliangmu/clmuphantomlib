@@ -29,15 +29,20 @@ CURRENT_VERSION = '0.2'
 
 
 
+
+
 # Functions
+
+
+
 
 
 # ---------------------------------- #
 # - JSON-related read / write func - #
 # ---------------------------------- #
 
-#  suitable for small human-readable files
 
+#  suitable for small human-readable files
 
 def _json_encode(
     obj : dict,
@@ -328,9 +333,28 @@ def json_load(
 
 
 
+
+
+# ---------------------------------- #
+# - HDF5-related read / write func - #
+# ---------------------------------- #
+
+
+def hdf5_load():
+    raise NotImplementedError
+
+
+def hdf5_dump():
+    raise NotImplementedError
+
+
+
+
+
 # ----------------------------- #
 # - Fortran-related read func - #
 # ----------------------------- #
+
 
 def fortran_read_file_unformatted(
     fp: io.BufferedReader,
