@@ -13,7 +13,7 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from .log import error, warn, note, debug_info
+from .log import is_verbose, say, DEFAULT_VERBOSE
 
 #  import (general)
 import os
@@ -30,7 +30,7 @@ class Settings:
     Using a class and private vars to make sure I don't stupidly overwrite it.
     will set __getitem__() but not __setitem__()
     """
-    def __init__(self, set_as:dict|str="default", verbose:int=3):
+    def __init__(self, set_as:dict|str="default", verbose=DEFAULT_VERBOSE):
         """Init.
         """
         self.__data = {
@@ -62,15 +62,14 @@ class Settings:
         return self.__data.__str__()
 
     
-    def set_as_default(self, verbose=3):
+    def set_as_default(self, verbose=DEFAULT_VERBOSE):
         self.__data['PHANTOM_DIR'] = os.getenv('PHANTOM_DIR')
         if isinstance(self.__data['PHANTOM_DIR'], str):
             self.__data['PHANTOM_DIR']  = os.path.normpath(self.__data['PHANTOM_DIR'])
             self.__data['EoS_MESA_DATA_DIR']= f"{self.__data['PHANTOM_DIR']}{sep}data{sep}eos{sep}mesa" 
         else:
-            if self.__data['PHANTOM_DIR'] is not None:
-                warn(
-                    "Settings.set_as_default()", verbose,
+            if is_verbose(verbose, 'warn') and self.__data['PHANTOM_DIR'] is not None:
+                say('warn', None, verbose,
                     f"Unrecognized env variable PHANTOM_DIR={self.__data['PHANTOM_DIR']}"
                 )
             self.__data['EoS_MESA_DATA_DIR'] = None
@@ -94,7 +93,7 @@ class Settings:
         self.normalize(force=True)
 
     
-    def normalize(self, force=True, verbose=3):
+    def normalize(self, force=True, verbose=DEFAULT_VERBOSE):
         """Post processing info stored in self."""
 
         for elem in ['X', 'Z']:
