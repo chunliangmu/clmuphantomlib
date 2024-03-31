@@ -74,7 +74,7 @@ class MyPhantomDataFrames:
         self.const['sigma_sb'] = const.sigma_sb.to_value(self.units['sigma_sb'])
         if is_verbose(verbose, 'debug'):
             say(
-                'debug', "mupl.MyPhantomDataFrames._update_units()", verbose,
+                'debug', None, verbose,
                 f"{self.units=}\n",
                 f"G={self.const['G']} {self.units['G']}\n",
                 f"sigma_sb={self.const['sigma_sb']} {self.units['sigma_sb']}\n",
@@ -144,7 +144,7 @@ class MyPhantomDataFrames:
         self.file_index = file_index
         filename = self.get_filename()
         if is_verbose(verbose, 'warn'):
-            say('note', 'MyPhantomDataFrames.read()', verbose, f"\n\n\tReading {filename=}\n\n")
+            say('note', None, verbose, f"\n\n\tReading {filename=}\n\n")
             
         # read
         self.sdfs = sarracen.read_phantom(filename)
@@ -153,7 +153,7 @@ class MyPhantomDataFrames:
         elif isinstance(self.sdfs, sarracen.sarracen_dataframe.SarracenDataFrame):
             self.sdfs = (self.sdfs, )
         else:
-            say('warn', 'MyPhantomDataFrames.read()', verbose,
+            say('warn', None, verbose,
                 f"\n\n\tUnexpected type of data just read: {type(self.sdfs)=}, please check code.\n\n")
         
         # set alias
@@ -185,8 +185,7 @@ class MyPhantomDataFrames:
         }
         self._update_units()
         if is_verbose(verbose, 'debug'):
-            say(
-                'debug', 'MyPhantomDataFrames.read()', verbose,
+            say('debug', None, verbose,
                 *[f"{self.units[i]} = {(self.units[i]/DEFAULT_UNITS[i]).decompose()} {DEFAULT_UNITS[i]}" for i in ['dist', 'mass', 'time']],
                 f"{self.time = }\n{self.gamma = }\n{self.ieos = }\n{self.total_mass = }\n",
                 f"Center of mass location: {self.loc_CoM = }\n",
@@ -198,8 +197,7 @@ class MyPhantomDataFrames:
         
         if not reset_xyz_by:
             if is_verbose(verbose, 'note') and get_norm_of_vec(self.loc_CoM) > 1:
-                say(
-                    'note', 'MyPhantomDataFrames.read()', verbose,
+                say('note', None, verbose,
                     f"CoM significantly deviates from the origin with distance of {get_norm_of_vec(self.loc_CoM)}.",
                     "Consider use reset_xyz_by_CoM=True option when read?",
                 )
@@ -215,8 +213,7 @@ class MyPhantomDataFrames:
                         do_warn = False
             # warn
             if do_warn and is_verbose(verbose, 'warn'):
-                say(
-                    'warn', 'MyPhantomDataFrames.read()', verbose,
+                say('warn', None, verbose,
                     "kappa column exists.",
                     f"We here assume kappa is in phantom units {self.units['opacity']=} ",
                     "However in phantom kappa is assumed to be in cgs unit.",
@@ -256,13 +253,13 @@ class MyPhantomDataFrames:
             reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
         else:
             if is_verbose(verbose, 'err'):
-                say('err', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+                say('err', None, verbose,
                     f"Unknown coordinates center reseting center str {what = }",
                     "Action Cancelled.")
             return self
             
         if is_verbose(verbose, 'note'):
-            say('note', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+            say('note', None, verbose,
                 f"Reseting Origin to {what} ({reset_xyz_by_arr})...")
         
         for sdf in self.sdfs:
@@ -272,9 +269,9 @@ class MyPhantomDataFrames:
         self.loc_CoM = self.get_loc_CoM()
         
         if is_verbose(verbose, 'note'):
-            say('note', 'MyPhantomDataFrames.reset_xyz_by()', verbose, f"CoM location is now {self.loc_CoM}")
+            say('note', None, verbose, f"CoM location is now {self.loc_CoM}")
         if is_verbose(verbose, 'warn') and what in {'', "CoM"} and get_norm_of_vec(self.loc_CoM) > 1e-5:
-            say('warn', 'MyPhantomDataFrames.reset_xyz_by()', verbose,
+            say('warn', None, verbose,
                 f"CoM is not close to origin {get_norm_of_vec(self.loc_CoM) = }")
     
     
@@ -518,14 +515,12 @@ class MyPhantomDataFrames:
         if len(self.data['sink']) != 2:
             if len(self.data['sink']) <= 1:
                 if is_verbose(verbose, 'err'):
-                    say(
-                        'err', 'MyPhantomDataFrames.get_orb_sep()', verbose,
+                    say('err', None, verbose,
                         f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
                 return np.nan
             else:
                 if is_verbose(verbose, 'warn'):
-                    say(
-                        'warn', 'MyPhantomDataFrames.get_orb_sep()', verbose,
+                    say('warn', None, verbose,
                         f"In {self.time = } More than two sink particles detected. Using first 2 to calc orb_sep.")
         # calc
         sinks = self.data['sink']
