@@ -97,7 +97,7 @@ def say(
     if orig is None:
         orig = 3
     if isinstance(orig, int):
-        orig = '::'.join([info.function for info in inspect.stack()][1:orig+1][::-1]) + '()'
+        orig = '() ==> '.join([info.function for info in inspect.stack()][1:orig+1][::-1]) + '()'
 
     # get message
     if   level in {'fatal'}:
