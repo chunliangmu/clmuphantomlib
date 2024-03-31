@@ -51,17 +51,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 # importing moviepy libraries
 from moviepy.editor import ImageSequenceClip
-#from numba import jit
 
 
-#     # parallels & optimizations
-#     
-#     import os
-#     
-#     # Fixing stupid numba killing kernel
-#     # See here https://github.com/numba/numba/issues/3016
-#     os.environ['NUMBA_DISABLE_INTEL_SVML']  = '1'
-#     from numba import njit, prange
+
 
 # # Defines
 

@@ -9,6 +9,9 @@ Owner: Chunliang Mu
 
 import inspect
 
+# set default value of verboseness
+DEFAULT_VERBOSE: int|bool = 3
+
 
 
 def is_verbose(verbose: int|bool, verbose_req: None|int|str = 1) -> bool:
@@ -64,7 +67,7 @@ def say(
     orig: str|int|None
         Origins of this message (typically function name).
         if None, will use orig=3.
-        if int, will automatically orig levels of function names that called this function.
+        if int, will automatically use the names of the function (up to {orig} levels) that called this function.
 
         *** WARNING: orig as int|None does NOT work for @numba.jit decorated functions!!!
             In which case please mannually enter function name.
@@ -122,20 +125,20 @@ def say(
 
 
 def error(*args, verbose_req: int|None = 'None'):
-    """Show an Error message. Deprecated. Use say() instead."""
+    """***Deprecated*** Use say() instead. Show an Error message. """
     return say('err',   *args, verbose_req=verbose_req)
 
 
 def warn(*args, verbose_req: int|None = 2):
-    """Show a warning message. Deprecated. Use say() instead."""
+    """***Deprecated*** Use say() instead. Show a warning message."""
     return say('warn',  *args, verbose_req=verbose_req)
     
 
 def note(*args, verbose_req: int|None = 3):
-    """Show a note message. Deprecated. Use say() instead."""
+    """***Deprecated*** Use say() instead. Show a note message."""
     return say('note',  *args, verbose_req=verbose_req)
 
 
 def debug_info(*args, verbose_req: int|None = 4):
-    """Show a debug info message. Deprecated. Use say() instead."""
+    """***Deprecated*** Use say() instead. Show a debug info message."""
     return say('debug', *args, verbose_req=verbose_req)

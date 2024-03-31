@@ -25,9 +25,11 @@ from numba import jit
 # Functions
 
 
-@jit(nopython=False)
-def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray|np.float64:
-    """Return distance squared between two N-dimensional points (arrays).
+
+
+@jit(nopython=True)
+def get_dist2_between_2pt_nb(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray|np.float64:
+    """Return distance squared between two N-dimensional points (arrays). numba version.
     
     Parameters
     ----------
@@ -37,10 +39,15 @@ def get_dist2_between_2pt(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray|np.flo
     #pt2 = np.array(pt2, copy=False)
     return np.sum((pt2 - pt1)**2, axis=-1)
 
+get_dist2_between_2pt = get_dist2_between_2pt_nb
 
-@jit(nopython=False)
-def get_norm_of_vec(vec: np.ndarray) -> np.ndarray|np.float64:
-    """Return the norm squared of a N-dimensional points (arrays).
+
+
+
+
+@jit(nopython=True)
+def get_norm_of_vec_nb(vec: np.ndarray) -> np.ndarray|np.float64:
+    """Return the norm squared of a N-dimensional points (arrays). numba version.
     
     Parameters
     ----------
@@ -48,26 +55,15 @@ def get_norm_of_vec(vec: np.ndarray) -> np.ndarray|np.float64:
     """
     return np.sum(vec**2, axis=-1)**0.5
 
-
-
-#@jit(nopython=False)
-#def get_r_from_loc(loc) -> float:
-#    """[Deprecated] Return norm of a 3D vector.
-#
-#    Deprecated: Use get_norm_of_vec(vec) instead
-#    
-#    Parameters
-#    ----------
-#    loc: 3-element list/array.
-#    """
-#    return get_norm_of_vec(loc)
+get_norm_of_vec = get_norm_of_vec_nb
 
 
 
 
-@jit(nopython=False)
-def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
-    """Return the closest point on a line to another point(s) pt0.
+
+@jit(nopython=True)
+def get_closest_pt_on_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
+    """Return the closest point on a line to another point(s) pt0. numba version.
     
     Parameters
     ----------
@@ -91,9 +87,12 @@ def get_closest_pt_on_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
     X_t = pt1 + t_0.reshape((*t_0.shape,1)) * (pt2 - pt1)
     return X_t
 
+get_closest_pt_on_line = get_closest_pt_on_line_nb
 
 
-@jit(nopython=False)
+
+
+
 def get_dist2_from_pts_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|np.float64:
     """Return the distance squared between a (series of) point and a line.
     
@@ -121,7 +120,7 @@ def get_dist2_from_pts_to_line(pt0: np.ndarray, line: np.ndarray) -> np.ndarray|
     ),
     nopython=True)
 def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float64:
-    """Return the distance squared between ONE point and a line.
+    """Return the distance squared between ONE point and a line. numba version.
 
     Read-only input version.
     No sanity check. Assumes specific input array shape.
@@ -151,9 +150,10 @@ def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float6
 
 
 
+    
 
-@jit(nopython=False)
-def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
+@jit(nopython=True)
+def get_ray_unit_vec_nb(ray: np.ndarray) -> np.ndarray:
     """Get unit vector of a ray (which is a line).
     
     Parameters
@@ -167,16 +167,16 @@ def get_ray_unit_vec(ray: np.ndarray) -> np.ndarray:
     ray_unit_vec: (N,)-dimensional np.ndarray
         unit vector of ray
     """
-    ray = np.array(ray, copy=False)
-    if len(ray.shape) == 3:
-        return get_rays_unit_vec(rays=ray)
     ray_unit_vec = ray[1, :] - ray[0, :]
     ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2)**0.5
     return ray_unit_vec
 
+get_ray_unit_vec = get_ray_unit_vec_nb
 
 
-@jit(nopython=False)
+
+
+
 def get_rays_unit_vec(rays: np.ndarray) -> np.ndarray:
     """Get unit vector of a list of rays.
     

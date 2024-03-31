@@ -33,7 +33,7 @@ import sarracen
 # Functions
 
 
-@jit(nopython=False)
+
 def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
     """Getting smoothing length from density.
     
@@ -46,7 +46,20 @@ def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int =
     return hfact * (mpart / rho)**(1./ndim)
 
 
-@jit(nopython=False)
+@jit(nopython=True)
+def get_h_from_rho_nb(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+    """Getting smoothing length from density. Numba version.
+    
+    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    rho = hfact**ndim * (m / h**ndim)
+    for ndim-dimension and hfact the constant.
+    So,
+    h = hfact * (mpart / rho)**(1./ndim)
+    """
+    return hfact * (mpart / rho)**(1./ndim)
+
+
+
 def get_rho_from_h(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
     """Getting density from smoothing length.
     
@@ -59,17 +72,29 @@ def get_rho_from_h(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3
     return mpart * (hfact / h)**ndim
 
 
+@jit(nopython=True)
+def get_rho_from_h_nb(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+    """Getting density from smoothing length. Numba version.
+    
+    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    rho = hfact**ndim * (m / h**ndim)
+    for ndim-dimension and hfact the constant.
+
+    No safety check is performed- make sure neither hfact and h are not in int datatype! 
+    """
+    return mpart * (hfact / h)**ndim
 
 
-@jit(nopython=False)
+
+
 def get_no_neigh(
-    sdf      : sarracen.sarracen_dataframe.SarracenDataFrame,
-    locs     : np.ndarray,
-    kernel   : sarracen.kernels.BaseKernel = None,
+    sdf       : sarracen.sarracen_dataframe.SarracenDataFrame,
+    locs      : np.ndarray,
+    kernel    : sarracen.kernels.BaseKernel = None,
     kernel_rad: float = None,
-    ndim     : int = 3,
+    ndim      : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
-    verbose  : int = 3,
+    verbose   : int = 3,
 ) -> np.ndarray|int:
     """Get the number of neighbour particles.
 
@@ -127,13 +152,13 @@ def get_no_neigh(
     # sanity checks
     if is_verbose(verbose, 'warn'):
         if ndim != 3:
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
                 "if the simulation is 3D, this means that the following calculations will be wrong.",
                 "Are you sure you know what you are doing?",
             )
         if xyzs.shape != (npart, ndim):
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
                 "This is not supposed to happen and means that the following calculations will be wrong.",
                 "Please check input to this function.",
@@ -147,8 +172,6 @@ def get_no_neigh(
         )
 
     return np.squeeze(ans)
-
-
 
 
 
@@ -397,23 +420,23 @@ def get_sph_interp_phantom(
     if is_verbose(verbose, 'warn'):
         val_names_set = {val_names} if isinstance(val_names, str) else set(val_names)
         if val_names_set.difference({'rho', 'u', 'vx', 'vy', 'vz', 'vr'}):
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 "Kernel interpolation should be used with conserved quantities (density, energy, momentum),",
                 f"but you are trying to do it with '{val_names}', which could lead to problematic results.",
             )
         if 'rho' in val_names_set:
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 "You are kernel interpolating density 'rho'.",
                 "Consider using get_rho_from_h() instead to directly calc density from smoothing length, as phantom itself would have done.",
             )
         if ndim != 3:
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
                 "if the simulation is 3D, this means that the following calculations will be wrong.",
                 "Are you sure you know what you are doing?",
             )
         if xyzs.shape != (npart, ndim):
-            say('warn', 'get_sph_interp()', verbose,
+            say('warn', None, verbose,
                 f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
                 "This is not supposed to happen and means that the following calculations will be wrong.",
                 "Please check input to this function.",

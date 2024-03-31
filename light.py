@@ -38,7 +38,7 @@ import itertools
 
 # get optical depth by ray-tracing
 
-@jit(nopython=False)
+
 def get_optical_depth_by_ray_tracing_3D(
     sdf    : sarracen.SarracenDataFrame,
     ray    : np.ndarray,
@@ -122,7 +122,7 @@ def get_optical_depth_by_ray_tracing_3D(
 
 
 
-#@jit(nopython=False)
+
 def get_photosphere_on_ray(
     pts_on_ray            : np.ndarray,
     dtaus                 : np.ndarray,
@@ -260,6 +260,7 @@ def get_photosphere_on_ray(
     """
 
     # init
+    ray = np.array(ray)
     if ray_unit_vec is None:
         ray_unit_vec = get_ray_unit_vec(ray)
     if kernel is None:
@@ -567,7 +568,7 @@ def _integrate_along_ray_gridxy_sub_parallel(
 
 
 
-@jit(nopython=False)
+
 def integrate_along_ray_grid(
     sdf     : sarracen.SarracenDataFrame,
     srcfuncs: np.ndarray,
@@ -678,7 +679,7 @@ def integrate_along_ray_grid(
 
 # work in progress
 
-@jit(nopython=False)
+
 def integrate_along_ray_gridxy(
     sdf     : sarracen.SarracenDataFrame,
     srcfuncs: np.ndarray,
