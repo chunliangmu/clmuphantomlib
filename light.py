@@ -23,6 +23,7 @@ from .eos_base import EoS_Base
 
 #  import (general)
 import numpy as np
+from numpy import typing as npt
 import numba
 from numba import jit, prange
 import sarracen
@@ -575,7 +576,7 @@ def integrate_along_ray_grid(
     rays    : np.ndarray,
     ray_unit_vec: np.ndarray|None = None,
     kernel  : sarracen.kernels.BaseKernel = None,
-    parallel: bool = True,
+    parallel: bool = False,
     rel_tol : float = 1e-15,
     verbose : int = 3,
 ) -> np.ndarray: # (nray,)-shaped:
@@ -635,7 +636,7 @@ def integrate_along_ray_grid(
             "especially to output uncertainty estimation as well!")
 
     if not parallel:
-        raise NotImplementedError
+        raise NotImplementedError("parallel=False version of this function not yet implemented.")
 
     # init
     ndim  : int = 3
@@ -686,7 +687,7 @@ def integrate_along_ray_gridxy(
     rays    : np.ndarray,
     ray_unit_vec: np.ndarray|None = None,
     kernel  : sarracen.kernels.BaseKernel = None,
-    parallel: bool = True,
+    parallel: bool = False,
     rel_tol : float = 1e-15,
     xyzs_names_list : list = ['x', 'y', 'z'],
     verbose : int = 3,
@@ -738,7 +739,7 @@ def integrate_along_ray_gridxy(
     """
 
     if not parallel:
-        raise NotImplementedError
+        raise NotImplementedError("parallel=False version of this function not yet implemented.")
 
     if is_verbose(verbose, 'warn'):
         say('warn', 'integrate_along_ray_grid()', verbose,
