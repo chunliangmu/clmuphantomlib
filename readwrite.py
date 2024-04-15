@@ -510,7 +510,7 @@ def _hdf5_dump_sub(
 
                 elif isinstance( obj, (tuple, list) ):
                     obj_elem_type = type(obj[0])
-                    np_array_like = True
+                    np_array_like = issubclass(obj_elem_type, (float, int))
                     # check type coherence
                     for obj_elem in obj:
                         if obj_elem_type != type(obj_elem):
@@ -621,7 +621,9 @@ def _hdf5_load_sub(
 
                 if '_type_' in obj.attrs.keys() and obj.attrs['_type_'] in {'tuple'}:
                     try:
-                        data[key] = tuple([data[key][i] for i in sorted(data[key], key=lambda x: int(x))])
+                        data_temp = {k: v for k, v in data[key].items() if k not in {'_meta_'}}
+                        data[key] = tuple(
+                            [data_temp[i] for i in sorted(data_temp, key=lambda x: int(x))])
                     except ValueError:
                         if is_verbose(verbose, 'err'):
                             say('err', None, verbose,
