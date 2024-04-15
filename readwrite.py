@@ -622,8 +622,7 @@ def _hdf5_load_sub(
                 if '_type_' in obj.attrs.keys() and obj.attrs['_type_'] in {'tuple'}:
                     try:
                         data_temp = {k: v for k, v in data[key].items() if k not in {'_meta_'}}
-                        data[key] = tuple(
-                            [data_temp[i] for i in sorted(data_temp, key=lambda x: int(x))])
+                        data[key] = tuple([data_temp[i] for i in sorted(data_temp, key=lambda x: int(x))])
                     except ValueError:
                         if is_verbose(verbose, 'err'):
                             say('err', None, verbose,
