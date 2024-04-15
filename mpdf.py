@@ -557,7 +557,7 @@ class MyPhantomDataFrames:
         
         Parameters
         ----------
-        fig, ax: mpl.figure.Figure, mpl.axes._axes.Axes
+        fig, ax: mpl.figure.Figure, mpl.axes.Axes
             fig & ax for plotting. if either set to None, will get a new fig & ax
             
         do_ax_titles: bool
@@ -615,7 +615,7 @@ class MyPhantomDataFrames:
             filename of the plot.
             returns this if savefilename is not False.
             
-        fig, ax: mpl.figure.Figure, mpl.axes._axes.Axes
+        fig, ax: mpl.figure.Figure, mpl.axes.Axes
             returns this if savefilename is False.
         """
         # get/clear ax

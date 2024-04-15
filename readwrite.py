@@ -17,7 +17,9 @@ from .log import say, is_verbose
 
 
 #  import (general)
+import sys
 import json
+import h5py
 import numpy as np
 from datetime import datetime
 from astropy import units
@@ -27,6 +29,11 @@ import io
 
 CURRENT_VERSION = '0.2'
 
+HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
+    int, float, str,
+    bool, np.bool_,
+    np.float32, np.float64,
+)
 
 
 
@@ -37,20 +44,64 @@ CURRENT_VERSION = '0.2'
 
 
 
+
+
+
+
+
+# ---------------------------------- #
+# -          helper funcs          - #
+# ---------------------------------- #
+
+
+
+def _add_metadata(
+    metadata: dict|h5py.AttributeManager|None = None,
+) -> dict|h5py.AttributeManager:
+    """Add additional info to meta data."""
+    if metadata is None:
+        metadata = {}
+    if '_created_time_utc_' not in metadata.keys():
+        # only write if haven't already written
+        metadata['_version_clmuformatter_'] = CURRENT_VERSION
+        metadata['_created_time_utc_'     ] = datetime.utcnow().isoformat()
+    return metadata
+
+
+
+def get_str_from_astropyUnit(unit: units.Unit) -> str:
+    """Translate astropy.units.core.Unit to string """
+    # first test if the unit is a custom-defined unit that might not be parseable
+    try:
+        units.Unit(unit.to_string())
+    except ValueError:
+        unit = unit.cgs
+    return unit.to_string()
+
+
+
+
+
+
+
+
+
+
 # ---------------------------------- #
 # - JSON-related read / write func - #
 # ---------------------------------- #
 
 
+
 #  suitable for small human-readable files
 
 def _json_encode(
-    obj : dict,
-    metadata            : dict|None = {},
-    overwrite_obj       : bool      = False,
-    overwrite_obj_kwds  : bool      = False,
-    ignore_unknown_types: bool      = False,
-    verbose            : int       = 1,
+    obj     : dict,
+    metadata: dict | None = {},
+    overwrite_obj       : bool = False,
+    overwrite_obj_kwds  : bool = False,
+    ignore_unknown_types: bool = False,
+    verbose : int = 3,
 ) -> dict:
     """Encode the obj to add meta data and do type convertion.
 
@@ -62,11 +113,14 @@ def _json_encode(
         '_data_' : # actual data (if top_level)
         '_type_' : # type of the data stored
             Supported type:
-                 None  (or other False-equivalent things): return '_data_' as is
+                 None|False (or other False-equivalent things): return '_data_' as is
+               #'None'     : None.
                 'np.bool_' : stored as bool (Will NOT read back as np.bool_ !)
+               #'dict'     : dict
                 'tuple': tuple stored as list
                 'numpy.ndarray': numpy array stored as list by default
                 'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
+        '_unit_' : # unit of the astropy.units.Quantity, if that is the type
     
     Parameters
     ----------
@@ -103,13 +157,13 @@ def _json_encode(
     # then, write metadata
     if metadata is not None:
         if isinstance(obj, dict):
-            if '_meta_' in obj.keys() and obj['_meta_'] and not overwrite_obj_kwds:
+            if '_meta_' in obj.keys():
                 # safety check
-                raise ValueError
-            obj['_meta_'] = {
-                '_version_clmuformatter_': CURRENT_VERSION,
-                '_created_time_utc_': datetime.utcnow().isoformat(),
-            }
+                if obj['_meta_'] and not overwrite_obj_kwds:
+                    raise ValueError
+                obj['_meta_'] = _add_metadata(obj['_meta_'])
+            else:
+                obj['_meta_'] = _add_metadata()
             # note: no need to parse data since we will do it anyway in the next step
             if isinstance(metadata, dict):
                 for key in metadata.keys():
@@ -128,11 +182,11 @@ def _json_encode(
         if '_type_' in obj.keys() and obj['_type_']:
             if overwrite_obj_kwds:
                 del obj['_type_']
-                say('warn', '_json_encode(...)', verbose,
+                say('warn', None, verbose,
                     "there are '_type_' keyword inside the input dict.",
                     "The data stored there will be removed to avoid issues.")
             else:
-                say('warn', '_json_encode(...)', verbose,
+                say('warn', None, verbose,
                     "there are '_type_' keyword inside the input dict.",
                     "These could cause issues when reading data.")
         # recursively format whatever is inside the dict
@@ -152,19 +206,13 @@ def _json_encode(
             obj = bool(obj)
         elif isinstance( obj, tuple ):
             obj = {'_type_': 'tuple', '_data_': list(obj)}
-        elif type(obj) is np.ndarray :
+        elif type(obj) is np.ndarray:
             obj = {'_type_': 'numpy.ndarray', '_data_': obj.tolist()}
-        elif type(obj) is units.Quantity :
-            unit = obj.unit
-            # first test if the unit is a custom-defined unit that might not be parseable
-            try:
-                units.Unit(unit.to_string())
-            except ValueError:
-                unit = unit.cgs
+        elif type(obj) is units.Quantity:
             obj = {
                 '_type_': 'astropy.units.Quantity',
                 '_data_': obj.value.tolist(),
-                '_unit_': unit.to_string(),
+                '_unit_': get_str_from_astropyUnit(obj.unit),
             }
         else:
             if ignore_unknown_types:
@@ -178,10 +226,10 @@ def _json_encode(
 
 
 def _json_decode(
-    obj : dict,
+    obj     : dict,
     overwrite_obj   : bool = False,
     remove_metadata : bool = True,
-    verbose        : int  = 1,
+    verbose : int  = 3,
 ) -> dict:
     """Decode the obj obtained from json_load(...) to its original state.
 
@@ -259,14 +307,14 @@ def _json_decode(
 
 
 def json_dump(
-    obj: dict,
-    fp: io.BufferedReader,
-    metadata: dict|None = {},
-    overwrite_obj = False,
-    overwrite_obj_kwds = False,
+    obj     : dict,
+    fp      : io.BufferedReader,
+    metadata: dict | None = {},
+    overwrite_obj       : bool = False,
+    overwrite_obj_kwds  : bool = False,
     ignore_unknown_types: bool = False,
-    indent: int|None = 1,
-    verbose: int = 1,
+    indent  : int | None = 1,
+    verbose : int = 3,
 ):
     """Dump obj to file-like fp as a json file in my custom format with support of numpy arrays etc.
 
@@ -312,9 +360,9 @@ def json_dump(
 
 
 def json_load(
-    fp: io.BufferedReader,
+    fp      : io.BufferedReader,
     remove_metadata: bool = True,
-    verbose: int = 1,
+    verbose : int = 3,
 ):
     """Read obj from a json file (saved by json_dump(...) in this submodule).
 
@@ -335,17 +383,366 @@ def json_load(
 
 
 
+
+
+
+
+
 # ---------------------------------- #
 # - HDF5-related read / write func - #
 # ---------------------------------- #
 
 
-def hdf5_load():
-    raise NotImplementedError
 
 
-def hdf5_dump():
-    raise NotImplementedError
+def _hdf5_dump_metadata(
+    metadata: dict,
+    grp     : h5py.Group,
+    verbose : int = 3,
+) -> None:
+    """Dump metadata to grp.attrs.
+
+    Parameters
+    ----------
+    metadata: dict
+        data to be written.
+        If not dict, will raise Error if verbose, or do NOTHING if otherwise.
+
+    grp: h5py.File | h5py.Group
+        hdf5 data file, where data will be written to.
+        
+    verbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+    """
+    if isinstance(metadata, dict):
+        # safety check
+        if is_verbose(verbose, 'warn') and sys.getsizeof(metadata) + sys.getsizeof(grp.attrs) >= 65535:
+            say('warn', None, verbose,
+                "Potentially large metadata size:",
+                f"(Adding {sys.getsizeof(metadata)/1024:.1f}KB to {sys.getsizeof(grp.attrs)/1024:.1f}KB).",
+                "Should be less than 64KB.",
+                sep=' ',
+            )
+        _add_metadata(grp.attrs)
+        for key in metadata.keys():
+            grp.attrs[key] = metadata[key]
+    else:
+        if is_verbose(verbose, 'fatal'):
+            raise ValueError("metadata should be of type 'dict'.")
+    return
+
+
+
+def _hdf5_dump_sub(
+    data    : dict,
+    grp     : h5py.Group,
+    metadata: dict|None = {},
+    verbose : int = 3,
+) -> None:
+    """Encode the data and dump to grp.
+
+    Suitable for storing medium/large machine-readable files.
+
+    Do NOT put weird characters like '/' in obj.keys().
+    obj['_meta_'] will be stored as metadata in grp.attrs.
+
+    DO NOT INCLUDE THE FOLLOWING KEYWORDS IN INPUT UNLESS YOU KNOW WHAT YOU ARE DOING
+        '_meta_' : # meta data
+        '_data_' : # actual data
+        '_type_' : # type of the data stored
+            Supported type:
+                 None|False  (or other False-equivalent things): return '_data_' as is
+                'None'     : None.
+                'str'      : Sting
+                'dict'     : dict
+                'np.bool_' : stored as bool (Will NOT read back as np.bool_ !)
+                'tuple': tuple stored as list
+                'numpy.ndarray': numpy array stored as list by default
+                'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
+        '_unit_' : # unit of the astropy.units.Quantity, if that is the type
+
+    Parameters
+    ----------
+    data: dict
+        data to be written.
+
+    grp: h5py.File | h5py.Group
+        hdf5 data file, where data will be written to.
+        
+    metadata: dict | None
+        meta data to be added to file. The code will also save some of its own metadata.
+        set it to None to disable this feature.
+        
+    verbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+    """
+    
+    # write data to file
+    if isinstance(data, dict):
+
+        _data_in_keys = ('_data_' in data.keys())
+        
+        for key in data.keys():
+            obj = data[key]
+            
+            # sanity check
+            if is_verbose(verbose, 'fatal') and not isinstance(key, str):
+                # must be in str because it's the folder path within hdf5 files
+                raise ValueError(f"key={key} of dict 'data' should be of type 'str', but it is of type {type(key)}.")
+
+            # save metadata
+            if   key in {'_meta_'} and not _data_in_keys:
+                # write meta data as of the group
+                _hdf5_dump_metadata(obj, grp, verbose=verbose)
+            elif key in {'_type_'} and _data_in_keys:
+                pass
+            else:
+                # parse into data and dump
+                
+                if   isinstance(obj, type(None)):
+                    sav = grp.create_dataset(key, dtype='f')
+                    sav.attrs['_type_'] = 'None'
+                    
+                elif isinstance(obj, HDF5_ATTRS_ACCEPTABLE_TYPES):
+                    sav = grp.create_dataset(key, dtype='f')
+                    sav.attrs['_data_'] = obj
+                    sav.attrs['_type_'] = False
+
+                elif isinstance( obj, (tuple, list) ):
+                    obj_elem_type = type(obj[0])
+                    np_array_like = True
+                    # check type coherence
+                    for obj_elem in obj:
+                        if obj_elem_type != type(obj_elem):
+                            np_array_like = False
+                    if np_array_like:
+                        sav = grp.create_dataset(key, data=np.array(obj))
+                        sav.attrs['_type_'] = 'numpy.ndarray'
+                    else:
+                        sav = grp.create_group(key)
+                        _hdf5_dump_sub({str(i): iobj for i, iobj in enumerate(obj)}, sav, metadata=None)
+                        sav.attrs['_type_'] = 'tuple'
+                        
+                elif type(obj) is np.ndarray:
+                    if len(obj.shape):    # array-like
+                        sav = grp.create_dataset(key, data=obj)
+                    else:                 # scalar
+                        sav = grp.create_dataset(key, dtype='f')
+                        sav.attrs['_data_'] = obj.item()
+                    sav.attrs['_type_'] = 'numpy.ndarray'
+                        
+                elif type(obj) is units.Quantity:
+                    if len(obj.shape):    # array-like
+                        sav = grp.create_dataset(key, data=obj.value)
+                    else:                 # scalar
+                        sav = grp.create_dataset(key, dtype='f')
+                        sav.attrs['_data_'] = obj.value
+                    sav.attrs['_type_'] = 'astropy.units.Quantity'
+                    sav.attrs['_unit_'] = get_str_from_astropyUnit(obj.unit)
+
+                elif isinstance(obj, dict):
+                    sav = grp.create_group(key)
+                    _hdf5_dump_sub(obj, sav, metadata=None)
+                    sav.attrs['_type_'] = 'dict'
+                    
+                else:
+                    # Not yet implemented
+                    if is_verbose(verbose, 'fatal'):
+                        raise NotImplementedError(f"I haven't yet implemented storing data type {type(obj)} in hdf5.")
+
+                
+        if '_meta_' in data.keys() and _data_in_keys:
+            # write meta data as of the data
+            _hdf5_dump_metadata(data['_meta_'], data['_data_'], verbose=verbose)
+        if '_type_' in data.keys() and _data_in_keys:
+            _hdf5_dump_metadata({'_type_': data['_type_']}, data['_data_'], verbose=verbose)
+            
+    else:
+        if is_verbose(verbose, 'fatal'):
+            raise ValueError(f"Incorrect input type of data: {type(data)}. Should be dict.")
+
+    # write more metadata
+    if metadata is not None:
+        _hdf5_dump_metadata(metadata, grp, verbose=verbose)
+
+    return
+
+
+
+
+
+def _hdf5_load_sub(
+    data    : dict,
+    grp     : h5py.Group,
+    remove_metadata : bool = False,
+    verbose : int = 3,
+) -> dict:
+    """load from grp, decode and put into data.
+
+    Suitable for storing medium/large machine-readable files.
+
+    Do NOT put weird characters like '/' in obj.keys().
+    obj['_meta_'] will be stored as metadata in grp.attrs.
+
+    Parameters
+    ----------
+    data: dict
+        dict to be load into.
+
+    grp: h5py.File | h5py.Group
+        hdf5 data file, where data will be load from.
+        
+    remove_metadata : bool
+        Do NOT load meta data from loaded dict.
+        
+    verbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+
+        
+    Returns
+    -------
+    data: original data
+    """
+    
+    # re-construct data from file
+    if isinstance(data, dict):
+        
+        if not remove_metadata:
+            data['_meta_'] = dict(grp.attrs)
+
+        for key in grp.keys():
+            
+            obj = grp[key]
+
+            if   isinstance(obj, h5py.Group  ):    # is dict
+                
+                data[key] = {}
+                _hdf5_load_sub(data[key], obj, remove_metadata=remove_metadata, verbose=verbose)
+
+                if '_type_' in obj.attrs.keys() and obj.attrs['_type_'] in {'tuple'}:
+                    try:
+                        data[key] = tuple([data[key][i] for i in sorted(data[key], key=lambda x: int(x))])
+                    except ValueError:
+                        if is_verbose(verbose, 'err'):
+                            say('err', None, verbose,
+                                f"Unexpected input: cannot convert {key=} from dict to tuple,",
+                                f"because {data[key].keys()=} cannot each be converted to integers.")
+                
+            elif isinstance(obj, h5py.Dataset):    # is data
+                
+                if len(obj.shape):    # is array
+
+                    data[key] = obj
+                    if '_type_' in obj.attrs.keys():
+                        if   obj.attrs['_type_'] in {'numpy.ndarray'}:
+                            data[key] = np.array(data[key])
+                        elif obj.attrs['_type_'] in {'astropy.units.Quantity'} and '_unit_' in obj.attrs.keys():
+                            data[key] = units.Quantity(value=data[key], unit=obj.attrs['_unit_'])
+                        elif is_verbose(verbose, 'err'):
+                            say('err', None, verbose, f"Unexpected input {dict(obj.attrs)=}")
+                    elif is_verbose(verbose, 'err'):
+                        say('err', None, verbose, f"Unexpected input {dict(obj.attrs)=}")
+
+                else:                 # is scalar
+                    
+                    # load data
+                    data[key] = None
+                    if   '_data_' in obj.attrs.keys():
+                        data[key] = obj.attrs['_data_']
+                    elif is_verbose(verbose, 'err') and '_type_' not in obj.attrs.keys():
+                        say('err', None, verbose, f"Unexpected input {dict(obj.attrs)=}")
+
+                    # re-construct data
+                    if '_type_' in obj.attrs.keys() and obj.attrs['_type_']:
+                        if   obj.attrs['_type_'] in {'None'}:
+                            data[key] = None
+                        elif obj.attrs['_type_'] in {'numpy.ndarray'}:
+                            data[key] = np.array(data[key])
+                        elif obj.attrs['_type_'] in {'astropy.units.Quantity'} and '_unit_' in obj.attrs.keys():
+                            data[key] = units.Quantity(value=data[key], unit=obj.attrs['_unit_'])
+                        elif is_verbose(verbose, 'err'):
+                            say('err', None, verbose, f"Unexpected input {dict(obj.attrs)=}")
+                
+            elif is_verbose(verbose, 'err'):
+                say('err', None, verbose, f"Unexpected input type {type(obj)=}")
+
+
+    return data
+
+
+
+def hdf5_dump(
+    obj     : dict,
+    filename: str ,
+    metadata: dict|None = {},
+    filemode: str = 'w',
+    verbose : int = 3,
+) -> None:
+    """Dump obj to file-like fp as a hdf5 file in my custom format with support of numpy arrays etc.
+
+    Suitable for storing medium/large machine-readable files.
+
+    Do NOT put weird characters like '/' in obj.keys().
+
+
+    Parameters
+    ----------
+    obj: dict
+        data to be written.
+
+    fp: io.BufferedReader:
+        File object you get with open(), with write permission.
+        
+    metadata: dict | None
+        meta data to be added to file. The code will also save some of its own metadata.
+        set it to None to disable this feature.
+        
+    verbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+    """
+    with h5py.File(filename, mode=filemode) as fp:
+        _hdf5_dump_sub(obj, fp, metadata, verbose=verbose)
+    return
+
+
+
+
+
+def hdf5_load(
+    filename: str ,
+    filemode: str = 'r',
+    remove_metadata : bool = False,
+    verbose : int = 3,
+) -> None:
+    """Load data from h5py file in my custom format.
+
+
+    Parameters
+    ----------
+    obj: dict
+        data to be written.
+
+    fp: io.BufferedReader:
+        File object you get with open(), with write permission.
+        
+    remove_metadata : bool
+        Do NOT load meta data from loaded dict.
+        
+    verbose: int
+        How much erros, warnings, notes, and debug info to be print on screen.
+
+    Returns
+    -------
+    obj: original data
+    """
+    with h5py.File(filename, mode=filemode) as fp:
+        obj = _hdf5_load_sub({}, fp, remove_metadata=remove_metadata, verbose=verbose)
+
+    return obj
+
+
+
+
 
 
 
@@ -354,6 +751,7 @@ def hdf5_dump():
 # ----------------------------- #
 # - Fortran-related read func - #
 # ----------------------------- #
+
 
 
 def fortran_read_file_unformatted(
@@ -394,11 +792,11 @@ def fortran_read_file_unformatted(
         t_format = 'd'
         t_no_bytes = 8
     else:
-        say('err',
-            'fortran_read_file_unformatted()', verbose,
+        say('err', None, verbose,
             f"Unrecognized data type t={t}."
-            )
-        raise NotImplementedError
+        )
+        if is_verbose(verbose, 'fatal'):
+            raise NotImplementedError
     
     rec_no_bytes = struct.unpack('i', fp.read(4))[0]
     no_in_record = int(rec_no_bytes / t_no_bytes)
@@ -408,7 +806,7 @@ def fortran_read_file_unformatted(
     else:
         rec_no_bytes_used = no * t_no_bytes
         if no != no_in_record:
-            say('warn', 'fortran_read_file_unformatted()', verbose,
+            say('warn', None, verbose,
                 f"Supplied no={no} does not match the record no_in_record={no_in_record}.",
                 "Incorrect type perhaps?",
                 "will continue to use supplied no regardless."
@@ -417,7 +815,7 @@ def fortran_read_file_unformatted(
     data = struct.unpack(f'{no}{t_format}', fp.read(rec_no_bytes_used))
     rec_no_bytes_again = struct.unpack('i', fp.read(4))[0]
     if rec_no_bytes != rec_no_bytes_again:
-        say('warn', 'fortran_read_file_unformatted()', verbose,
+        say('warn', None, verbose,
             "The no of bytes recorded in the beginning and the end of the record did not match!",
             f"Beginning is {rec_no_bytes}, while end is {rec_no_bytes_again}.",
             "This means something is seriously wrong.",

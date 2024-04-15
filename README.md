@@ -40,11 +40,10 @@ Nevertheless, I hope it helps!
 
 - Python libraries:
 	- `python3` (version >= 3.10)
-	- `numpy scipy astropy numba matplotlib ipympl moviepy`
+	- `numpy scipy astropy h5py numba matplotlib ipympl moviepy`
 	- `sarracen`
 
 (
-In the future I might add h5py as well.
 I think that's all.
 If that doesn't work, try install all of those with anaconda:
 `numpy scipy astropy sympy h5py numba pandas seaborn matplotlib ipympl ipynbname pylint moviepy jupyter jupyterlab`
