@@ -227,8 +227,8 @@ def _json_encode(
 
 def _json_decode(
     obj     : dict,
-    overwrite_obj   : bool = False,
-    remove_metadata : bool = True,
+    overwrite_obj : bool = False,
+    load_metadata : bool = True,
     verbose : int  = 3,
 ) -> dict:
     """Decode the obj obtained from json_load(...) to its original state.
@@ -243,8 +243,8 @@ def _json_decode(
     overwrite_obj: bool
         If False, will copy the obj before modifying to avoid changing the raw data
         
-    remove_metadata: bool
-        Remove meta data from loaded dict (top level only).
+    load_metadata: bool
+        Load meta data from loaded dict (top level only).
         
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen. 
@@ -262,7 +262,7 @@ def _json_decode(
             obj = obj.copy()
     
         # then, remove metadata
-        if remove_metadata and isinstance(obj, dict) and '_meta_' in obj.keys():
+        if not load_metadata and isinstance(obj, dict) and '_meta_' in obj.keys():
             del obj['_meta_']
     
         # parse back to original data type
@@ -273,7 +273,7 @@ def _json_decode(
                     return _json_decode(
                         obj['_data_'],
                         overwrite_obj=overwrite_obj,
-                        remove_metadata=False, verbose=verbose)
+                        load_metadata=True, verbose=verbose)
             elif obj['_type_'] == 'tuple':
                 if '_data_' in obj.keys():
                     return tuple(obj['_data_'])
@@ -298,7 +298,7 @@ def _json_decode(
             obj[key] = _json_decode(
                 obj[key],
                 overwrite_obj=overwrite_obj,
-                remove_metadata=False, verbose=verbose)
+                load_metadata=True, verbose=verbose)
 
     return obj
 
@@ -360,9 +360,10 @@ def json_dump(
 
 
 def json_load(
-    fp      : io.BufferedReader,
-    remove_metadata: bool = True,
-    verbose : int = 3,
+    fp           : io.BufferedReader,
+    load_metadata: bool = True,
+    remove_metadata: bool|None = None,
+    verbose      : int = 3,
 ):
     """Read obj from a json file (saved by json_dump(...) in this submodule).
 
@@ -371,13 +372,18 @@ def json_load(
     fp: io.BufferedReader:
         File object you get with open(), with read permission.
         
-    remove_metadata: bool
-        remove meta data from loaded dict.
+    load_metadata: bool
+        Load meta data from loaded dict.
+
+    remove_metadata: bool|None
+        *** Deprecated ***
         
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
-    return _json_decode( json.load(fp), overwrite_obj=True, remove_metadata=remove_metadata, verbose=verbose, )
+    if remove_metadata is not None:    # backward-compatibility term
+        load_metadata = not remove_metadata
+    return _json_decode( json.load(fp), overwrite_obj=True, load_metadata=load_metadata, verbose=verbose, )
 
 
 
@@ -587,7 +593,7 @@ def _hdf5_dump_sub(
 def _hdf5_load_sub(
     data    : dict,
     grp     : h5py.Group,
-    remove_metadata : bool = False,
+    load_metadata : bool = True,
     verbose : int = 3,
 ) -> dict:
     """load from grp, decode and put into data.
@@ -605,7 +611,7 @@ def _hdf5_load_sub(
     grp: h5py.File | h5py.Group
         hdf5 data file, where data will be load from.
         
-    remove_metadata : bool
+    load_metadata : bool
         Do NOT load meta data from loaded dict.
         
     verbose: int
@@ -620,7 +626,7 @@ def _hdf5_load_sub(
     # re-construct data from file
     if isinstance(data, dict):
         
-        if not remove_metadata:
+        if load_metadata:
             data['_meta_'] = dict(grp.attrs)
 
         for key in grp.keys():
@@ -630,7 +636,7 @@ def _hdf5_load_sub(
             if   isinstance(obj, h5py.Group  ):    # is dict
                 
                 data[key] = {}
-                _hdf5_load_sub(data[key], obj, remove_metadata=remove_metadata, verbose=verbose)
+                _hdf5_load_sub(data[key], obj, load_metadata=load_metadata, verbose=verbose)
 
                 if '_type_' in obj.attrs.keys() and obj.attrs['_type_'] in {'tuple'}:
                     try:
@@ -725,7 +731,7 @@ def hdf5_dump(
 def hdf5_load(
     filename: str ,
     filemode: str = 'r',
-    remove_metadata : bool = False,
+    load_metadata : bool = False,
     verbose : int = 3,
 ) -> None:
     """Load data from h5py file in my custom format.
@@ -739,7 +745,7 @@ def hdf5_load(
     fp: io.BufferedReader:
         File object you get with open(), with write permission.
         
-    remove_metadata : bool
+    load_metadata : bool
         Do NOT load meta data from loaded dict.
         
     verbose: int
@@ -750,7 +756,7 @@ def hdf5_load(
     obj: original data
     """
     with h5py.File(filename, mode=filemode) as fp:
-        obj = _hdf5_load_sub({}, fp, remove_metadata=remove_metadata, verbose=verbose)
+        obj = _hdf5_load_sub({}, fp, load_metadata=load_metadata, verbose=verbose)
 
     return obj
 
