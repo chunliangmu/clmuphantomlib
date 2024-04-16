@@ -460,6 +460,7 @@ def _hdf5_dump_sub(
     data    : dict,
     grp     : h5py.Group,
     metadata: dict|None = {},
+    add_metadata: bool = True,
     verbose : int = 3,
 ) -> None:
     """Encode the data and dump to grp.
@@ -480,6 +481,9 @@ def _hdf5_dump_sub(
     metadata: dict | None
         meta data to be added to file. The code will also save some of its own metadata.
         set it to None to disable this feature.
+
+    add_metadata: bool
+        Add additional metadata info.
         
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
@@ -525,7 +529,7 @@ def _hdf5_dump_sub(
                         sav.attrs['_type_'] = 'numpy.ndarray'
                     else:
                         sav = grp.create_group(key)
-                        _hdf5_dump_sub({str(i): iobj for i, iobj in enumerate(obj)}, sav, metadata=None)
+                        _hdf5_dump_sub({str(i): iobj for i, iobj in enumerate(obj)}, sav, metadata=None, add_metadata=False, verbose=verbose)
                         sav.attrs['_type_'] = 'tuple'
                         
                 elif type(obj) is np.ndarray:
@@ -547,7 +551,7 @@ def _hdf5_dump_sub(
 
                 elif isinstance(obj, dict):
                     sav = grp.create_group(key)
-                    _hdf5_dump_sub(obj, sav, metadata=None)
+                    _hdf5_dump_sub(obj, sav, metadata=None, add_metadata=False, verbose=verbose)
                     sav.attrs['_type_'] = 'dict'
                     
                 else:
@@ -558,7 +562,7 @@ def _hdf5_dump_sub(
                 
         if '_meta_' in data.keys():
             # write meta data as of the data
-            _hdf5_dump_metadata(data['_meta_'], grp, verbose=verbose)
+            _hdf5_dump_metadata(data['_meta_'], grp, add_data=add_metadata, verbose=verbose)
             
     else:
         if is_verbose(verbose, 'fatal'):
@@ -566,7 +570,7 @@ def _hdf5_dump_sub(
 
     # write more metadata
     if metadata is not None:
-        _hdf5_dump_metadata(metadata, grp, verbose=verbose)
+        _hdf5_dump_metadata(metadata, grp, add_data=add_metadata, verbose=verbose)
 
     return
 
@@ -739,9 +743,9 @@ def hdf5_dump(
         if is_verbose(verbose, 'note'):
             say('note', None, verbose, f"Writing to {fp} (will OVERWRITE if file already exist.)")
         with h5py.File(fp, mode='w') as f:
-            _hdf5_dump_sub(obj, f, metadata, verbose=verbose)
+            _hdf5_dump_sub(obj, f, metadata, add_metadata=True, verbose=verbose)
     elif isinstance(fp, h5py.Group):
-        _hdf5_dump_sub(obj, fp, metadata, verbose=verbose)
+        _hdf5_dump_sub(obj, fp, metadata, add_metadata=True, verbose=verbose)
     elif is_verbose(verbose, 'fatal'):
         raise ValueError(f"Unexpected input fp type {type(fp)=}")
     return
