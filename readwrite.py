@@ -634,9 +634,13 @@ def _hdf5_load_sub(
             obj = grp[key]
 
             if   isinstance(obj, h5py.Group  ):    # is dict
+
+                if load_metadata:
+                    data['_meta_'][key] = dict(obj.attrs)
                 
                 data[key] = {}
                 _hdf5_load_sub(data[key], obj, load_metadata=load_metadata, verbose=verbose)
+
 
                 if '_type_' in obj.attrs.keys() and obj.attrs['_type_'] in {'tuple'}:
                     try:
@@ -649,6 +653,9 @@ def _hdf5_load_sub(
                                 f"because {data[key].keys()=} cannot each be converted to integers.")
                 
             elif isinstance(obj, h5py.Dataset):    # is data
+
+                if load_metadata:
+                    data['_meta_'][key] = dict(obj.attrs)
                 
                 if len(obj.shape):    # is array
 
