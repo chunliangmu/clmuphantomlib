@@ -509,11 +509,9 @@ def _hdf5_dump_sub(
                 # must be in str because it's the folder path within hdf5 files
                 raise ValueError(f"key={key} of dict 'data' should be of type 'str', but it is of type {type(key)}.")
 
-            # save metadata
-            if   key in {'_meta_'} and not _data_in_keys:
-                # write meta data as of the group
-                _hdf5_dump_metadata(obj, grp, verbose=verbose)
-            elif key in {'_type_'} and _data_in_keys:
+            # hold for metadata
+            if key in {'_meta_'}:
+                # wait till after to write in case we want to write metadata to some of the datasets too
                 pass
             else:
                 # parse into data and dump
@@ -570,11 +568,9 @@ def _hdf5_dump_sub(
                         raise NotImplementedError(f"I haven't yet implemented storing data type {type(obj)} in hdf5.")
 
                 
-        if '_meta_' in data.keys() and _data_in_keys:
+        if '_meta_' in data.keys():
             # write meta data as of the data
-            _hdf5_dump_metadata(data['_meta_'], data['_data_'], verbose=verbose)
-        if '_type_' in data.keys() and _data_in_keys:
-            _hdf5_dump_metadata({'_type_': data['_type_']}, data['_data_'], verbose=verbose)
+            _hdf5_dump_metadata(data['_meta_'], grp, verbose=verbose)
             
     else:
         if is_verbose(verbose, 'fatal'):
@@ -738,7 +734,7 @@ def hdf5_dump(
 def hdf5_load(
     filename: str ,
     filemode: str = 'r',
-    load_metadata : bool = False,
+    load_metadata : bool = True,
     verbose : int = 3,
 ) -> None:
     """Load data from h5py file in my custom format.
