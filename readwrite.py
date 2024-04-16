@@ -493,13 +493,7 @@ def _hdf5_dump_sub(
     
     # write data to file
     if isinstance(data, dict):
-
-        _data_in_keys = ('_data_' in data.keys())
-        if is_verbose(verbose, 'warn') and _data_in_keys:
-            say('warn', None, verbose,
-                f"Keyword '_data_' exists in input data.",
-                f"This could mess up saved data's metadata if you do not know what you are doing.",
-            )
+        
         
         for key in data.keys():
             obj = data[key]
