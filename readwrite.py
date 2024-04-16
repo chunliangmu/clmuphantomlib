@@ -27,7 +27,7 @@ import struct
 import io
 
 
-CURRENT_VERSION = '0.2'
+CURRENT_VERSION = '0.3'
 
 HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
     int, float, str,
@@ -425,10 +425,18 @@ def _hdf5_dump_metadata(
             )
         _add_metadata(grp.attrs)
         for key in metadata.keys():
-            grp.attrs[key] = metadata[key]
+            if   isinstance(metadata[key], dict):
+                if key in grp.keys():
+                    _hdf5_dump_metadata(metadata[key], grp[key])
+                elif is_verbose(verbose, 'err'):
+                    say('err', None, verbose, f"{key=} in {metadata.keys()=}, but not in {grp.keys()}.")
+            elif isinstance(metadata[key], HDF5_ATTRS_ACCEPTABLE_TYPES):
+                grp.attrs[key] = metadata[key]
+            elif is_verbose(verbose, 'err'):
+                say('err', None, verbose, f"Unexpected metadata[{key=}] type: {type(metadata[key])}.")
     else:
         if is_verbose(verbose, 'fatal'):
-            raise ValueError("metadata should be of type 'dict'.")
+            raise ValueError(f"metadata {type(metadata)=} should be of type 'dict'.")
     return
 
 
@@ -481,6 +489,11 @@ def _hdf5_dump_sub(
     if isinstance(data, dict):
 
         _data_in_keys = ('_data_' in data.keys())
+        if is_verbose(verbose, 'warn') and _data_in_keys:
+            say('warn', None, verbose,
+                f"Keyword '_data_' exists in input data.",
+                f"This could mess up saved data's metadata if you do not know what you are doing.",
+            )
         
         for key in data.keys():
             obj = data[key]
