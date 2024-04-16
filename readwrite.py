@@ -57,14 +57,18 @@ HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
 
 def _add_metadata(
     metadata: dict|h5py.AttributeManager|None = None,
+    add_data: bool = True,
+    verbose : int  = 3,
 ) -> dict|h5py.AttributeManager:
     """Add additional info to meta data."""
     if metadata is None:
         metadata = {}
-    if '_created_time_utc_' not in metadata.keys():
-        # only write if haven't already written
+    if add_data:
         metadata['_version_clmuformatter_'] = CURRENT_VERSION
-        metadata['_created_time_utc_'     ] = datetime.utcnow().isoformat()
+        if '_created_time_utc_' not in metadata.keys():
+            # only write if haven't already written
+            metadata['_created_time_utc_' ] = datetime.utcnow().isoformat()
+        metadata['_modified_time_utc_'    ] = datetime.utcnow().isoformat()
     return metadata
 
 
@@ -161,9 +165,9 @@ def _json_encode(
                 # safety check
                 if obj['_meta_'] and not overwrite_obj_kwds:
                     raise ValueError
-                obj['_meta_'] = _add_metadata(obj['_meta_'])
+                obj['_meta_'] = _add_metadata(obj['_meta_'], verbose=verbose)
             else:
-                obj['_meta_'] = _add_metadata()
+                obj['_meta_'] = _add_metadata(verbose=verbose)
             # note: no need to parse data since we will do it anyway in the next step
             if isinstance(metadata, dict):
                 for key in metadata.keys():
@@ -404,6 +408,7 @@ def json_load(
 def _hdf5_dump_metadata(
     metadata: dict,
     grp     : h5py.Group,
+    add_data: bool = True,
     verbose : int = 3,
 ) -> None:
     """Dump metadata to grp.attrs.
@@ -416,6 +421,9 @@ def _hdf5_dump_metadata(
 
     grp: h5py.File | h5py.Group
         hdf5 data file, where data will be written to.
+
+    add_data: bool
+        Add additional metadata info.
         
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
@@ -429,11 +437,12 @@ def _hdf5_dump_metadata(
                 "Should be less than 64KB.",
                 sep=' ',
             )
-        _add_metadata(grp.attrs)
+        _add_metadata(grp.attrs, add_data=add_data, verbose=verbose)
         for key in metadata.keys():
             if   isinstance(metadata[key], dict):
+                # add metadata to individual datasets
                 if key in grp.keys():
-                    _hdf5_dump_metadata(metadata[key], grp[key])
+                    _hdf5_dump_metadata(metadata[key], grp[key], add_data=False, verbose=verbose)
                 elif is_verbose(verbose, 'err'):
                     say('err', None, verbose, f"{key=} in {metadata.keys()=}, but not in {grp.keys()}.")
             elif isinstance(metadata[key], HDF5_ATTRS_ACCEPTABLE_TYPES):
@@ -459,21 +468,6 @@ def _hdf5_dump_sub(
 
     Do NOT put weird characters like '/' in obj.keys().
     obj['_meta_'] will be stored as metadata in grp.attrs.
-
-    DO NOT INCLUDE THE FOLLOWING KEYWORDS IN INPUT UNLESS YOU KNOW WHAT YOU ARE DOING
-        '_meta_' : # meta data
-        '_data_' : # actual data
-        '_type_' : # type of the data stored
-            Supported type:
-                 None|False  (or other False-equivalent things): return '_data_' as is
-                'None'     : None.
-                'str'      : Sting
-                'dict'     : dict
-                'np.bool_' : stored as bool (Will NOT read back as np.bool_ !)
-                'tuple': tuple stored as list
-                'numpy.ndarray': numpy array stored as list by default
-                'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
-        '_unit_' : # unit of the astropy.units.Quantity, if that is the type
 
     Parameters
     ----------
@@ -690,9 +684,8 @@ def _hdf5_load_sub(
 
 def hdf5_dump(
     obj     : dict,
-    filename: str ,
+    fp      : str | h5py.File | h5py.Group,
     metadata: dict|None = {},
-    filemode: str = 'w',
     verbose : int = 3,
 ) -> None:
     """Dump obj to file-like fp as a hdf5 file in my custom format with support of numpy arrays etc.
@@ -701,6 +694,31 @@ def hdf5_dump(
 
     Do NOT put weird characters like '/' in obj.keys().
 
+    DO NOT INCLUDE THE FOLLOWING KEYWORDS IN INPUT UNLESS YOU KNOW WHAT YOU ARE DOING
+        '_meta_' : # meta data
+            Note: You can add additional metadata for each datasets, in format of e.g.
+            data = {
+                'x1': ...,
+                'x2': ...,
+                ...,
+                '_meta_': {
+                    'x1': {'Description': "Description of x1.",},
+                    'x2': {'Description': "Description of x2.",},
+                },
+            }
+        '_data_' : # actual data
+        '_type_' : # type of the data stored
+            Supported type:
+                 None|False  (or other False-equivalent things): return '_data_' as is
+                'None'     : None.
+                'str'      : Sting
+                'dict'     : dict
+                'np.bool_' : stored as bool (Will NOT read back as np.bool_ !)
+                'tuple': tuple stored as list
+                'numpy.ndarray': numpy array stored as list by default
+                'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
+        '_unit_' : # unit of the astropy.units.Quantity, if that is the type
+        
 
     Parameters
     ----------
@@ -717,8 +735,15 @@ def hdf5_dump(
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
-    with h5py.File(filename, mode=filemode) as fp:
+    if isinstance(fp, str):
+        if is_verbose(verbose, 'note'):
+            say('note', None, verbose, f"Writing to {fp} (will OVERWRITE if file already exist.)")
+        with h5py.File(fp, mode='w') as f:
+            _hdf5_dump_sub(obj, f, metadata, verbose=verbose)
+    elif isinstance(fp, h5py.Group):
         _hdf5_dump_sub(obj, fp, metadata, verbose=verbose)
+    elif is_verbose(verbose, 'fatal'):
+        raise ValueError(f"Unexpected input fp type {type(fp)=}")
     return
 
 
@@ -726,9 +751,9 @@ def hdf5_dump(
 
 
 def hdf5_load(
-    filename: str ,
+    fp      : str | h5py.File | h5py.Group,
     filemode: str = 'r',
-    load_metadata : bool = True,
+    load_metadata : bool = False,
     verbose : int = 3,
 ) -> None:
     """Load data from h5py file in my custom format.
@@ -752,8 +777,15 @@ def hdf5_load(
     -------
     obj: original data
     """
-    with h5py.File(filename, mode=filemode) as fp:
+    if isinstance(fp, str):
+        if is_verbose(verbose, 'note'):
+            say('note', None, verbose, f"Reading from {fp}")
+        with h5py.File(fp, mode='r') as f:
+            obj = _hdf5_load_sub({}, f, load_metadata=load_metadata, verbose=verbose)
+    elif isinstance(fp, h5py.Group):
         obj = _hdf5_load_sub({}, fp, load_metadata=load_metadata, verbose=verbose)
+    elif is_verbose(verbose, 'fatal'):
+        raise ValueError(f"Unexpected input fp type {type(fp)=}")
 
     return obj
 
