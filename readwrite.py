@@ -720,16 +720,25 @@ def hdf5_open(
 
 
 def hdf5_subgroup(
-    fp      : h5py.File | h5py.Group,
-    grp_name: str,
-    metadata: None|dict = None,
-    verbose : int = 3,
+    fp       : h5py.File | h5py.Group,
+    grp_name : str,
+    metadata : None|dict = None,
+    overwrite: bool= False,
+    verbose  : int = 3,
 ) -> h5py.Group:
     """Create / get a subgroup from fp.
+    
+    Remember to set overwrite=True at the dump-level.
     """
+    
+    if overwrite and grp_name in fp.keys():
+        del fp[grp_name]
+        
     fp_subgrp = fp[grp_name] if grp_name in fp.keys() else fp.create_group(grp_name)
+    
     if metadata is not None:
         _hdf5_dump_sub({}, fp_subgrp, metadata, add_metadata=True, verbose=verbose)
+        
     return fp_subgrp
 
 
