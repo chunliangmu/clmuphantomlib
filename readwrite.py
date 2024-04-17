@@ -27,7 +27,7 @@ import struct
 import io
 
 
-CURRENT_VERSION = '0.3'
+CURRENT_VERSION = '0.4'
 
 HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
     int, float, str,
@@ -65,10 +65,12 @@ def _add_metadata(
         metadata = {}
     if add_data:
         metadata['_version_clmuformatter_'] = CURRENT_VERSION
+        now_time_utc = datetime.utcnow().isoformat()
         if '_created_time_utc_' not in metadata.keys():
             # only write if haven't already written
-            metadata['_created_time_utc_' ] = datetime.utcnow().isoformat()
-        metadata['_modified_time_utc_'    ] = datetime.utcnow().isoformat()
+            metadata['_created_time_utc_' ] = now_time_utc
+        else:
+            metadata['_modified_time_utc_'] = now_time_utc
     return metadata
 
 
@@ -686,10 +688,46 @@ def _hdf5_load_sub(
 
 
 
+def hdf5_open(
+    filename: str,
+    filemode: str = 'a',
+    metadata: None|dict = None,
+    verbose : int = 3,
+) -> h5py.File:
+    """Open a hdf5 file.
+
+    Remember to close it with the .close() function!
+    Alternatively you can put this in a with group.
+
+    You can write to sub groups within one file by running
+        hdf5_dump(obj, fp.create_group([group_name]))
+    """
+    fp = h5py.File(filename, mode=filemode)
+    if metadata is not None:
+        _hdf5_dump_sub({}, fp, metadata, add_metadata=True, verbose=verbose)
+    return fp
+
+
+
+def hdf5_subgroup(
+    fp      : h5py.File | h5py.Group,
+    grp_name: str,
+    metadata: None|dict = None,
+    verbose : int = 3,
+) -> h5py.Group:
+    """Create / get a subgroup from fp.
+    """
+    fp_subgrp = fp[grp_name] if grp_name in fp.keys() else fp.create_group(grp_name)
+    if metadata is not None:
+        _hdf5_dump_sub({}, fp_subgrp, metadata, add_metadata=True, verbose=verbose)
+    return fp_subgrp
+
+
+
 def hdf5_dump(
     obj     : dict,
     fp      : str | h5py.File | h5py.Group,
-    metadata: dict|None = {},
+    metadata: None| dict = None,
     verbose : int = 3,
 ) -> None:
     """Dump obj to file-like fp as a hdf5 file in my custom format with support of numpy arrays etc.
@@ -706,8 +744,8 @@ def hdf5_dump(
                 'x2': ...,
                 ...,
                 '_meta_': {
-                    'x1': {'Description': "Description of x1.",},
-                    'x2': {'Description': "Description of x2.",},
+                    'x1': { 'Description': "Description of x1.", },
+                    'x2': { 'Description': "Description of x2.", },
                 },
             }
         '_data_' : # actual data
@@ -739,6 +777,8 @@ def hdf5_dump(
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
+    if metadata is None:
+        metadata = {}
     if isinstance(fp, str):
         if is_verbose(verbose, 'note'):
             say('note', None, verbose, f"Writing to {fp} (will OVERWRITE if file already exist.)")
@@ -756,7 +796,6 @@ def hdf5_dump(
 
 def hdf5_load(
     fp      : str | h5py.File | h5py.Group,
-    filemode: str = 'r',
     load_metadata : bool = False,
     verbose : int = 3,
 ) -> None:
@@ -765,9 +804,6 @@ def hdf5_load(
 
     Parameters
     ----------
-    obj: dict
-        data to be written.
-
     fp: io.BufferedReader:
         File object you get with open(), with write permission.
         
@@ -810,7 +846,7 @@ def hdf5_load(
 def fortran_read_file_unformatted(
     fp: io.BufferedReader,
     t: str,
-    no: int|None = None,
+    no: None|int = None,
     verbose: int = 3,
 ) -> tuple:
     """Read one record from an unformatted file saved by fortran.
