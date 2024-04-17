@@ -453,7 +453,7 @@ def _hdf5_dump_metadata(
                 say('err', None, verbose, f"Unexpected metadata[{key=}] type: {type(metadata[key])}.")
     else:
         if is_verbose(verbose, 'fatal'):
-            raise ValueError(f"metadata {type(metadata)=} should be of type 'dict'.")
+            raise TypeError(f"metadata {type(metadata)=} should be of type 'dict'.")
     return
 
 
@@ -501,7 +501,7 @@ def _hdf5_dump_sub(
             # sanity check
             if is_verbose(verbose, 'fatal') and not isinstance(key, str):
                 # must be in str because it's the folder path within hdf5 files
-                raise ValueError(f"key={key} of dict 'data' should be of type 'str', but it is of type {type(key)}.")
+                raise TypeError(f"key={key} of dict 'data' should be of type 'str', but it is of type {type(key)}.")
 
             # hold for metadata
             if key in {'_meta_'}:
@@ -568,7 +568,7 @@ def _hdf5_dump_sub(
             
     else:
         if is_verbose(verbose, 'fatal'):
-            raise ValueError(f"Incorrect input type of data: {type(data)}. Should be dict.")
+            raise TypeError(f"Incorrect input type of data: {type(data)}. Should be dict.")
 
     # write more metadata
     if metadata is not None:
@@ -787,7 +787,7 @@ def hdf5_dump(
     elif isinstance(fp, h5py.Group):
         _hdf5_dump_sub(obj, fp, metadata, add_metadata=True, verbose=verbose)
     elif is_verbose(verbose, 'fatal'):
-        raise ValueError(f"Unexpected input fp type {type(fp)=}")
+        raise TypeError(f"Unexpected input fp type {type(fp)=}")
     return
 
 
@@ -825,7 +825,7 @@ def hdf5_load(
     elif isinstance(fp, h5py.Group):
         obj = _hdf5_load_sub({}, fp, load_metadata=load_metadata, verbose=verbose)
     elif is_verbose(verbose, 'fatal'):
-        raise ValueError(f"Unexpected input fp type {type(fp)=}")
+        raise TypeError(f"Unexpected input fp type {type(fp)=}")
 
     return obj
 
