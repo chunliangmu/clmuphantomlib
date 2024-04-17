@@ -27,7 +27,7 @@ import struct
 import io
 
 
-CURRENT_VERSION = '0.4'
+CURRENT_VERSION = '0.5'
 
 HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
     int, float, str,
@@ -515,9 +515,13 @@ def _hdf5_dump_sub(
                     sav.attrs['_type_'] = 'None'
                     
                 elif isinstance(obj, HDF5_ATTRS_ACCEPTABLE_TYPES):
-                    sav = grp.create_dataset(key, dtype='f')
-                    sav.attrs['_data_'] = obj
-                    sav.attrs['_type_'] = False
+                    if ('_meta_' in data.keys() and key in data['_meta_'].keys()) or (isinstance(metadata, dict) and key in metadata.keys()):
+                        sav = grp.create_dataset(key, dtype='f')
+                        sav.attrs['_data_'] = obj
+                        sav.attrs['_type_'] = False
+                    else:
+                        sav = grp['_misc_'] if '_misc_' in grp.keys() else grp.create_dataset('_misc_', dtype='f')
+                        sav.attrs[  key   ] = obj
 
                 elif isinstance( obj, (tuple, list) ):
                     obj_elem_type = type(obj[0])
@@ -644,10 +648,16 @@ def _hdf5_load_sub(
                 
             elif isinstance(obj, h5py.Dataset):    # is data
 
-                if load_metadata:
+
+                if load_metadata and key not in {'_misc_'}:   # load metadata
                     data['_meta_'][key] = dict(obj.attrs)
+
                 
-                if len(obj.shape):    # is array
+                if key in {'_misc_'}: # is small pieces of data
+                    for k in obj.attrs.keys():
+                        data[k] = obj.attrs[k]
+                        
+                elif obj.shape:       # is array
 
                     data[key] = obj
                     if '_type_' in obj.attrs.keys():
@@ -759,7 +769,8 @@ def hdf5_dump(
                 'tuple': tuple stored as list
                 'numpy.ndarray': numpy array stored as list by default
                 'astropy.units.Quantity': astropy Quantity stored as list (value) and string (unit)
-        '_unit_' : # unit of the astropy.units.Quantity, if that is the type
+        '_unit_' : unit of the astropy.units.Quantity, if that is the type
+        '_misc_' : small pieces of data
         
 
     Parameters
