@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 
 """
@@ -30,12 +31,13 @@ MyPhantomDataFrames column names:
 from . import sph_interp
 
 
-from .settings import DEFAULT_SETTINGS
-from .geometry import *
+from .settings  import DEFAULT_SETTINGS
+from .geometry  import *
 from .readwrite import *
-from .light import get_photosphere_on_ray
-from .eos   import get_eos
-from .mpdf  import get_filename_phantom_dumps, MyPhantomDataFrames
+from .io        import *
+from .light     import get_photosphere_on_ray
+from .eos       import get_eos
+from .mpdf      import get_filename_phantom_dumps, MyPhantomDataFrames
 
 # .main is deprecrated but we will go with this for now.
-from .main  import *
+from .main      import *
