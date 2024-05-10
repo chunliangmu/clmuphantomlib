@@ -23,13 +23,19 @@ Associate Supervisor: Professor Mark Wardle
 
 
 
+There are some examples in the examples/ folder for running the code.
+They are directly copied from my scripts,
+and you may want to change the input parameters (the `*__input.py` file and the `_*.py` files)
+before using them.
+
+Have fun!
+
 
 ## Disclaimer
 
 This project is a *work in progress*.
 No guarrantees whatsoever.
 Use it at your own risk.
-Nevertheless, I hope it helps!
 
 **Note: Please cite the sarracen paper if you use this code (see below link for the sarracen repository description), since this code uses sarracen behind the scene.**
 
