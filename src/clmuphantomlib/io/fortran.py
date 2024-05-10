@@ -14,7 +14,7 @@ Owner: Chunliang Mu
 
 #  import (my libs)
 from ..log   import say, is_verbose
-#from .shared import _add_metadata, get_str_from_astropyUnit, get_compress_mode_from_filename
+#from ._shared import _add_metadata, get_str_from_astropyUnit, get_compress_mode_from_filename
 
 
 #  import (general)
