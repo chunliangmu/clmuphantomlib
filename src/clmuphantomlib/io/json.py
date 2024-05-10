@@ -20,7 +20,7 @@ from ._shared import _add_metadata, get_str_from_astropyUnit, get_compress_mode_
 #  import (general)
 #import sys
 import json
-#from json import JSONDecodeError
+from json import JSONDecodeError    # do not delete this line, because other modules might need this
 #import gzip
 import numpy as np
 from astropy import units
