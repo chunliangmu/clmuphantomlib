@@ -26,6 +26,9 @@ Associate Supervisor: Professor Mark Wardle
 There are some examples in the examples/ folder for running the code.
 They are directly copied from my scripts on 2024-05-10,
 and you may want to change the input parameters (the `*__input.py` file and the `_*.py` files)
+and put them into the src/ directory
+(or alternatively put a symbolic link in the examples/ directory to src/clmuphantomlib,
+so the package can be loaded correctly)
 before using them.
 
 Have fun!
