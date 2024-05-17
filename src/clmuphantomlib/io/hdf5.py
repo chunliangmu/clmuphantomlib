@@ -382,7 +382,6 @@ def hdf5_open(
             filename = gzip.open(filename, f'{filemode[0]}b')
         elif filemode in {'a'}:
             # decompress whole file before writing
-            filename = gzip.open(filename, f'{filemode[0]}b')
             filename_root, ext = os.path.splitext(filename)
             if ext not in {'.gz'} and is_verbose(verbose, 'fatal'):
                 raise ValueError(f"{filename=} should end with extension '.gz'.")
