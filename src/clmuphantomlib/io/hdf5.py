@@ -389,13 +389,13 @@ def hdf5_open(
                 shutil.copyfileobj(f_in, f_out)
             filename = filename_root
             if is_verbose(verbose, 'note'):
-                say('note', None, f"Remember to manually compress the file, or use hdf5_close()")
+                say('note', None, verbose, f"Remember to manually compress the file, or use hdf5_close()")
         elif filemode in {'w', 'x'}:
             filename_root, ext = os.path.splitext(filename)
             if ext in {'.gz'}:
                 filename = filename_root
             if is_verbose(verbose, 'note'):
-                say('note', None, f"Remember to manually compress the file, or use hdf5_close()")
+                say('note', None, verbose, f"Remember to manually compress the file, or use hdf5_close()")
         elif is_verbose(verbose, 'fatal'):
             raise ValueError(f"Unrecognized {filemode=}")
     
@@ -539,7 +539,7 @@ def hdf5_dump(
             os.remove(filename_root)
             #else:
             #    if is_verbose(verbose, 'warn'):
-            #        say('warn', None, f"Unrecognized compress mode {compress=}, will read as if compress=False")
+            #        say('warn', None, verbose, f"Unrecognized compress mode {compress=}, will read as if compress=False")
 
                 
     elif isinstance(fp, h5py.Group):
@@ -599,7 +599,7 @@ def hdf5_load(
                 obj = _hdf5_load_sub({}, f, load_metadata=load_metadata, verbose=verbose)
             #else:
             #    if is_verbose(verbose, 'warn'):
-            #        say('warn', None, f"Unrecognized compress mode {compress=}, will read as if compress=False")
+            #        say('warn', None, verbose, f"Unrecognized compress mode {compress=}, will read as if compress=False")
         if not do_compress:
             # no compression
             with h5py.File(fp, mode='r') as f:
