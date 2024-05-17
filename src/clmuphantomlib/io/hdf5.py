@@ -385,8 +385,11 @@ def hdf5_open(
             filename_root, ext = os.path.splitext(filename)
             if ext not in {'.gz'} and is_verbose(verbose, 'fatal'):
                 raise ValueError(f"{filename=} should end with extension '.gz'.")
-            with gzip.open(filename, 'rb') as f_in, open(filename_root, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+            try:
+                with gzip.open(filename, 'rb') as f_in, open(filename_root, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            except FileNotFoundError:
+                pass
             filename = filename_root
             if is_verbose(verbose, 'note'):
                 say('note', None, verbose, f"Remember to manually compress the file, or use hdf5_close()")
