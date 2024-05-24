@@ -23,13 +23,15 @@ Associate Supervisor: Professor Mark Wardle
 
 
 
-There are some examples in the examples/ folder for running the code.
+There are some examples in the `examples/` folder for running the code.
 They are directly copied from my scripts on 2024-05-10,
 and you may want to change the input parameters (the `*__input.py` file and the `_*.py` files)
 and put them into the src/ directory
 (or alternatively put a symbolic link in the examples/ directory to src/clmuphantomlib,
 so the package can be loaded correctly)
 before using them.
+See https://github.com/chunliangmu/RTinCEE-scripts-2024 for all of my scripts using this library in 2024 so far.
+
 
 Have fun!
 
