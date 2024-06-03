@@ -87,11 +87,36 @@ def get_rho_from_h_nb(h: np.ndarray|float, mpart: float, hfact: float, ndim:int 
 
 
 
+
+def get_dw_dq(kernel: sarracen.kernels.BaseKernel, ndim: int = 3, nsample_per_h: int = 1000):
+    """Return a function of the derivative of the kernel w."""
+    w = kernel.w
+    w_rad = kernel.get_radius()
+    nsample = nsample_per_h*w_rad
+    qs = np.linspace(0., w_rad, nsample)
+    w_qs = w(qs, ndim)
+    dw_dqs = np.gradient(w_qs, np.diff(qs)[0])
+    # fix endpoints
+    dw_dqs[0] = 0
+    dw_dqs[-1]= 0 
+    ndim_used = ndim
+    
+    @jit(nopython=True)
+    def dw_dq(q, ndim):
+        if ndim != ndim_used: raise NotImplementedError
+        return np.interp(q, qs, dw_dqs)
+
+    return dw_dq
+
+
+
+
+
 def get_no_neigh(
     sdf       : sarracen.sarracen_dataframe.SarracenDataFrame,
     locs      : np.ndarray,
-    kernel    : sarracen.kernels.BaseKernel = None,
-    kernel_rad: float = None,
+    kernel    : None|sarracen.kernels.BaseKernel = None,
+    kernel_rad: None|float = None,
     ndim      : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
     verbose   : int = 3,
