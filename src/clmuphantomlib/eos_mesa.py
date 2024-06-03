@@ -36,7 +36,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 class _EoS_MESA_table_opacity:
     """A class to store and handle stored MESA opacity tables from Phantom."""
-    def __init__(self, params: dict, settings: Settings, verbose: int=3):
+    def __init__(self, params: dict, settings: Settings = DEFAULT_SETTINGS, verbose: int=3):
         self._data_dir    = ""
         self._Z           = np.nan
         self._Z_arr       = np.array([])
