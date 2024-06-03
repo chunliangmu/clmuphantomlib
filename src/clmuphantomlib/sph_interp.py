@@ -498,6 +498,7 @@ def get_sph_gradient_phantom(
     val_names: str|list,
     locs     :   None|np.ndarray = None,
     vals_at_locs:None|np.ndarray = None,
+    hs_at_locs  :None|np.ndarray = None,
     kernel   :   None|sarracen.kernels.BaseKernel = None,
     hfact    :   None|float = None,
     xyzs_kdtree: None|kdtree.KDTree = None,
@@ -536,9 +537,9 @@ def get_sph_gradient_phantom(
         if None, will use ALL particle locations in sdf.
         if supplied, must supply vals_at_locs as well.
 
-    vals_at_locs: None|np.ndarray
-        Give either none of locs & vals_at_locs, or both.
-        the value interpolated at locs.
+    vals_at_locs, hs_at_locs: None|np.ndarray
+        Give either none of (locs, vals_at_locs, hs_at_locs), or all three.
+        The values and smoothing length interpolated at locs.
         
     kernel: sarracen.kernels.base_kernel
         Smoothing kernel for SPH data interpolation.
@@ -601,6 +602,7 @@ def get_sph_gradient_phantom(
     if locs is None:
         locs = xyzs
         vals_at_locs = vals
+        hs_at_locs   = hs
     if vals_at_locs is None:
         raise NotImplementedError()
 
@@ -608,7 +610,7 @@ def get_sph_gradient_phantom(
     
     # h * w_rad
     kernel_rad = float(kernel.get_radius())
-    hw_rad = kernel_rad * hs
+    hw_rad_at_locs = kernel_rad * hs_at_locs
     dw_dq = get_dw_dq(kernel, ndim=ndim)
     
     
@@ -620,7 +622,7 @@ def get_sph_gradient_phantom(
 
     nworker = -1 if parallel else 1
     
-    for i, js in enumerate(xyzs_kdtree.query_ball_point(locs, r=hw_rad, workers=nworker)):
+    for i, js in enumerate(xyzs_kdtree.query_ball_point(locs, r=hw_rad_at_locs, workers=nworker)):
         # i   is the index of the point where we are calculating gradient for
         # js are the indexes of its neighbours
         
@@ -646,13 +648,8 @@ def get_sph_gradient_phantom(
             )[:, np.newaxis, :]
             * rs_ij_hat[:, :, np.newaxis],
         axis=0)
-        
-        
-        
-        w_q = kernel_w(qs_ij, ndim)[:, np.newaxis]
-        ans_s[inds] += w_q * vals[j]
-        ans_w[inds] += w_q
 
+    
     ans /= hfact**ndim
     return ans
 
