@@ -19,7 +19,7 @@ from .log import say, is_verbose
 from .geometry import get_dist2_between_2pt, get_closest_pt_on_line, get_dist2_from_pt_to_line_nb, get_ray_unit_vec, get_rays_unit_vec
 from .sph_interp import get_sph_interp, get_h_from_rho, get_no_neigh
 from .units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
-from .eos_base import EoS_Base
+from .eos.base import EoS_Base
 
 #  import (general)
 import numpy as np
@@ -202,9 +202,9 @@ def get_photosphere_on_ray(
         $h_\mathrm{fact}$ and particle mass used in the phantom sim.
         If None, will get from sdf.params['hfact'] and sdf.params['mass']
 
-    eos: .eos_base.EoS_BASE
+    eos: .eos.base.EoS_BASE
         Only useful if you are calc-ing 'T'
-        Equation of state object defined in eos_base.py
+        Equation of state object defined in eos/base.py
 
     sdf_units: dict
         Only useful if you are calc-ing 'T'
