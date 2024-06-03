@@ -22,6 +22,7 @@ from .log import is_verbose, say
 
 #  import (general)
 import numpy as np
+from scipy.spatial import kdtree
 import numba
 from numba import jit
 import sarracen
@@ -484,5 +485,182 @@ def get_sph_interp_phantom(
     return ans
 
 
+
+
+
+
+
+
+
+
+def get_sph_gradient_phantom(
+    sdf      : sarracen.sarracen_dataframe.SarracenDataFrame,
+    val_names: str|list,
+    locs     :   None|np.ndarray = None,
+    vals_at_locs:None|np.ndarray = None,
+    kernel   :   None|sarracen.kernels.BaseKernel = None,
+    hfact    :   None|float = None,
+    xyzs_kdtree: None|kdtree.KDTree = None,
+    ndim     : int = 3,
+    xyzs_names_list : list = ['x', 'y', 'z'],
+    #method   : str = 'improved',
+    parallel : bool = False,
+    verbose  : int = 3,
+) -> np.ndarray:
+    """Getting the gradient for each SPH particles.
+
+    Assuming Phantom.
+        (That is, the smoothing length h is dynamically scaled with density rho using
+        rho = hfact**d * (m / h**d)
+        for d-dimension and constant hfact.)
+
+
+    Theories:
+    In SPH kernel interpolation theories, for arbitrary quantity A,
+        \nabla A \approx \braket{\nabla A} - A \braket{\nabla 1}
+        = \frac{1}{h_\mathrm{fact}^d} \sum_{j} \frac{A_j-A}{h_j} \frac{dw}{dq}(q_j) \hat{\mathbf{r}}
+    where rho = hfact**d * (m / h**d) is assumed.
+        
+    
+    Parameters
+    ----------
+    sdf: sarracen.SarracenDataFrame
+        Must contain columns: x, y, z, h.
+        if hfact is None or kernel is None, will get from sdf.
+        
+    val_names: str
+        Column label of the target smoothing data in sdf
+        
+    locs: None|np.ndarray
+        (..., 3)-shaped array determining the location for interpolation.
+        if None, will use ALL particle locations in sdf.
+        if supplied, must supply vals_at_locs as well.
+
+    vals_at_locs: None|np.ndarray
+        Give either none of locs & vals_at_locs, or both.
+        the value interpolated at locs.
+        
+    kernel: sarracen.kernels.base_kernel
+        Smoothing kernel for SPH data interpolation.
+        If None, will use the one in sdf.
+        
+    hfact: float
+        constant factor for h.
+        If None, will use the one in sdf.params['hfact'].
+
+    xyzs_kdtree: None|kdtree.KDTree
+        kdTree for the particles.
+        if None, will build one.
+    
+    ndim: int
+        dimension of the space. Default is 3 (for 3D).
+        DO NOT TOUCH THIS UNLESS YOU KNOW WHAT YOU ARE DOING.
+        
+    xyzs_names_list: list
+        list of names of the columns that represents x, y, z axes (i.e. coord axes names)
+        Make sure to change this if your ndim is something other than 3.
+
+    parallel: bool
+        Whether to parallel neighbour search process.
+
+    verbose: int
+        How much warnings, notes, and debug info to be print on screen. 
+        
+    Returns
+    -------
+    ans: float or np.ndarray
+        Depending on the shape of locs and val_names, returns float or array of float.
+    locs : (nlocs, 1,  ndim)-shaped np.ndarray,
+    vals : (1, npart, nvals)-shaped np.ndarray,
+    xyzs : (1, npart,  ndim)-shaped np.ndarray,
+    hs   : (1, npart,      )-shaped np.ndarray,
+    kernel_w  : sarracen.kernels.BaseKernel.w
+    kernel_rad: float
+        smoothing kernel radius in unit of h (outside this w goes to 0)
+    ndim : int = 3
+
+    Returns
+    -------
+    ans  : (nlocs, ndim, nvals)-shaped np.ndarray
+    """
+
+    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C') # shape=(npart, ndim)
+    vals = np.array(sdf[val_names], copy=False, order='C') # shape=(npart, nvals)
+    hs   = np.array(sdf['h'], copy=False, order='C')  # (npart,)
+
+    
+    if vals.ndim == 1:
+        vals = vals[:, np.newaxis]
+
+    if kernel is None:
+        kernel = sdf.kernel
+    if hfact is None:
+        hfact = float(sdf.params['hfact'])
+    if xyzs_kdtree is None:
+        xyzs_kdtree = kdtree.KDTree(xyzs)
+    if locs is None:
+        locs = xyzs
+        vals_at_locs = vals
+    if vals_at_locs is None:
+        raise NotImplementedError()
+
+
+    
+    # h * w_rad
+    kernel_rad = float(kernel.get_radius())
+    hw_rad = kernel_rad * hs
+    dw_dq = get_dw_dq(kernel, ndim=ndim)
+    
+    
+    nlocs = locs.shape[0]
+    npart = vals.shape[0]
+    nvals = vals.shape[1]
+    ans = np.zeros((nlocs, ndim, nvals), dtype=vals.dtype)
+
+
+    nworker = -1 if parallel else 1
+    
+    for i, js in enumerate(xyzs_kdtree.query_ball_point(locs, r=hw_rad, workers=nworker)):
+        # i   is the index of the point where we are calculating gradient for
+        # js are the indexes of its neighbours
+        
+        rs_ij = locs[i] - xyzs[js]    # shape=(njs, ndim)
+        rs_ij_norm = np.sum(rs_ij**2, axis=-1)**0.5    # shape=(njs,)
+        
+        # some items in rs_ij_norm (usually the first one) will be 0
+        # because it's the same particle.
+        # let's remove that
+        js_ind_cleaned = np.where(rs_ij_norm)
+        js = np.array(js)[js_ind_cleaned]
+        rs_ij = rs_ij[js_ind_cleaned]
+        rs_ij_norm = rs_ij_norm[js_ind_cleaned]
+
+        rs_ij_hat = rs_ij/rs_ij_norm[:, np.newaxis]    # shape=(njs, ndim)
+        qs_ij = rs_ij_norm / hs[js]    # shape=(njs,)
+
+        # get the gradient for i-th particle
+        ans[i] = np.sum(
+            (
+                (vals[js] - vals_at_locs[i]) / hs[js][:, np.newaxis]
+                * dw_dq(qs_ij, ndim)[:, np.newaxis]
+            )[:, np.newaxis, :]
+            * rs_ij_hat[:, :, np.newaxis],
+        axis=0)
+        
+        
+        
+        w_q = kernel_w(qs_ij, ndim)[:, np.newaxis]
+        ans_s[inds] += w_q * vals[j]
+        ans_w[inds] += w_q
+
+    ans /= hfact**ndim
+    return ans
+
+
+
+
+
+
 # set alias
-get_sph_interp = get_sph_interp_phantom
+get_sph_interp   = get_sph_interp_phantom
+get_sph_gradient = get_sph_gradient_phantom
