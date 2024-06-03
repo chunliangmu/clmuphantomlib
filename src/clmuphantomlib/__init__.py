@@ -36,7 +36,7 @@ from .geometry  import *
 #from .readwrite import *
 from .io        import *
 from .light     import get_photosphere_on_ray
-from .eos       import get_eos
+from .eos       import get_eos, get_eos_opacity
 from .mpdf      import get_filename_phantom_dumps, MyPhantomDataFrames
 
 # .main is deprecrated but we will go with this for now.
