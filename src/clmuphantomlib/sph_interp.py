@@ -501,7 +501,7 @@ def get_sph_gradient_phantom(
     hs_at_locs  :None|np.ndarray = None,
     kernel   :   None|sarracen.kernels.BaseKernel = None,
     hfact    :   None|float = None,
-    xyzs_kdtree: None|kdtree.KDTree = None,
+    sdf_kdtree : None|kdtree.KDTree = None,
     ndim     : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
     #method   : str = 'improved',
@@ -549,7 +549,7 @@ def get_sph_gradient_phantom(
         constant factor for h.
         If None, will use the one in sdf.params['hfact'].
 
-    xyzs_kdtree: None|kdtree.KDTree
+    sdf_kdtree: None|kdtree.KDTree
         kdTree for the particles.
         if None, will build one.
     
@@ -597,8 +597,8 @@ def get_sph_gradient_phantom(
         kernel = sdf.kernel
     if hfact is None:
         hfact = float(sdf.params['hfact'])
-    if xyzs_kdtree is None:
-        xyzs_kdtree = kdtree.KDTree(xyzs)
+    if sdf_kdtree is None:
+        sdf_kdtree = kdtree.KDTree(xyzs)
     if locs is None:
         locs = xyzs
         vals_at_locs = vals
@@ -624,7 +624,7 @@ def get_sph_gradient_phantom(
     if parallel:
         say('warn', None, verbose, "Only half of the process is parallelized. Pending improvements.")
     
-    for i, js in enumerate(xyzs_kdtree.query_ball_point(locs, r=hw_rad_at_locs, workers=nworker)):
+    for i, js in enumerate(sdf_kdtree.query_ball_point(locs, r=hw_rad_at_locs, workers=nworker)):
         # i   is the index of the point where we are calculating gradient for
         # js are the indexes of its neighbours
         
