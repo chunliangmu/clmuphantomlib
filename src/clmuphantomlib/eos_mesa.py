@@ -19,4 +19,4 @@ from .log import say
 say('warn', None, True, "clmuphantomlib.eos_mesa module is Deprecated. Use clmuphantomlib.eos.mesa instead.")
 
 
-from eos.mesa import *
+from .eos.mesa import *
