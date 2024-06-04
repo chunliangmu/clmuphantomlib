@@ -621,6 +621,8 @@ def get_sph_gradient_phantom(
 
 
     nworker = -1 if parallel else 1
+    if parallel:
+        say('warn', None, verbose, "Only half of the process is parallelized. Pending improvements.")
     
     for i, js in enumerate(xyzs_kdtree.query_ball_point(locs, r=hw_rad_at_locs, workers=nworker)):
         # i   is the index of the point where we are calculating gradient for
