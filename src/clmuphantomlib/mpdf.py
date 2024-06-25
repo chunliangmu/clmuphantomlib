@@ -7,6 +7,16 @@ A sub-module that adds a class to handle phantom data.
 It's a wrapper of the sarracen dataframe with some additional functions for my common envelope analysis.
 
 Owner: Chunliang Mu
+
+
+-------------------------------------------------------------------------------
+
+Side note: Remember to limit line length to 79 characters according to PEP-8
+    https://peps.python.org/pep-0008/#maximum-line-length    
+which is the length of below line of '-' characters.
+
+-------------------------------------------------------------------------------
+
 """
 
 

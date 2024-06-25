@@ -5,11 +5,21 @@
 A sub-module for SPH interpolation.
 
 Assuming Phantom.
-    (That is, the smoothing length h is dynamically scaled with density rho using
+    (i.e., the smoothing length h is dynamically scaled with density rho using
     rho = hfact**d * (m / h**d)
     for d-dimension and constant hfact.)
 
 Owner: Chunliang Mu
+
+
+-------------------------------------------------------------------------------
+
+Side note: Remember to limit line length to 79 characters according to PEP-8
+    https://peps.python.org/pep-0008/#maximum-line-length    
+which is the length of below line of '-' characters.
+
+-------------------------------------------------------------------------------
+
 """
 
 
@@ -21,10 +31,13 @@ Owner: Chunliang Mu
 from .log import is_verbose, say
 
 #  import (general)
+from typing import Callable
 import numpy as np
+from numpy import typing as npt
 from scipy.spatial import kdtree
 import numba
 from numba import jit
+from astropy import units
 import sarracen
 
 
@@ -35,10 +48,16 @@ import sarracen
 
 
 
-def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+def get_h_from_rho(
+    rho: float | npt.NDArray[np.float_] | units.Quantity,
+    mpart: float,
+    hfact: float,
+    ndim :int = 3,
+) -> float | npt.NDArray[np.float_] | units.Quantity:
     """Getting smoothing length from density.
     
-    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    Assuming Phantom,
+    where smoothing length h is dynamically scaled with density rho using
     rho = hfact**ndim * (m / h**ndim)
     for ndim-dimension and hfact the constant.
     So,
@@ -48,10 +67,16 @@ def get_h_from_rho(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int =
 
 
 @jit(nopython=True)
-def get_h_from_rho_nb(rho: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+def get_h_from_rho_nb(
+    rho: float | npt.NDArray[np.float_],
+    mpart: float,
+    hfact: float,
+    ndim :int = 3,
+) -> float | npt.NDArray[np.float_]:
     """Getting smoothing length from density. Numba version.
     
-    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    Assuming Phantom,
+    where smoothing length h is dynamically scaled with density rho using
     rho = hfact**ndim * (m / h**ndim)
     for ndim-dimension and hfact the constant.
     So,
@@ -61,27 +86,41 @@ def get_h_from_rho_nb(rho: np.ndarray|float, mpart: float, hfact: float, ndim:in
 
 
 
-def get_rho_from_h(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+def get_rho_from_h(
+    h: float | npt.NDArray[np.float_] | units.Quantity,
+    mpart: float,
+    hfact: float,
+    ndim :int = 3,
+) -> float | npt.NDArray[np.float_] | units.Quantity:
     """Getting density from smoothing length.
     
-    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    Assuming Phantom,
+    where smoothing length h is dynamically scaled with density rho using
     rho = hfact**ndim * (m / h**ndim)
     for ndim-dimension and hfact the constant.
 
-    No safety check is performed- make sure neither hfact and h are not in int datatype! 
+    No safety check is performed-
+        make sure neither hfact and h are not in int datatype! 
     """
     return mpart * (hfact / h)**ndim
 
 
 @jit(nopython=True)
-def get_rho_from_h_nb(h: np.ndarray|float, mpart: float, hfact: float, ndim:int = 3) -> np.ndarray|float:
+def get_rho_from_h_nb(
+    h: float | npt.NDArray[np.float_],
+    mpart: float,
+    hfact: float,
+    ndim: int = 3,
+) -> float | npt.NDArray[np.float_]:
     """Getting density from smoothing length. Numba version.
     
-    Assuming Phantom, where smoothing length h is dynamically scaled with density rho using
+    Assuming Phantom,
+    where smoothing length h is dynamically scaled with density rho using
     rho = hfact**ndim * (m / h**ndim)
     for ndim-dimension and hfact the constant.
 
-    No safety check is performed- make sure neither hfact and h are not in int datatype! 
+    No safety check is performed-
+        make sure neither hfact and h are not in int datatype! 
     """
     return mpart * (hfact / h)**ndim
 
@@ -89,7 +128,11 @@ def get_rho_from_h_nb(h: np.ndarray|float, mpart: float, hfact: float, ndim:int 
 
 
 
-def get_dw_dq(kernel: sarracen.kernels.BaseKernel, ndim: int = 3, nsample_per_h: int = 1000):
+def get_dw_dq(
+    kernel: sarracen.kernels.BaseKernel,
+    ndim: int = 3,
+    nsample_per_h: int = 1000,
+) -> Callable[[float, int], float]:
     """Return a function of the derivative of the kernel w."""
     w = kernel.w
     w_rad = kernel.get_radius()
@@ -103,7 +146,7 @@ def get_dw_dq(kernel: sarracen.kernels.BaseKernel, ndim: int = 3, nsample_per_h:
     ndim_used = ndim
     
     @jit(nopython=True)
-    def dw_dq(q, ndim):
+    def dw_dq(q : float, ndim: int) -> float:
         if ndim != ndim_used: raise NotImplementedError
         return np.interp(q, qs, dw_dqs)
 
@@ -114,17 +157,27 @@ def get_dw_dq(kernel: sarracen.kernels.BaseKernel, ndim: int = 3, nsample_per_h:
 
 
 def get_no_neigh(
-    sdf       : sarracen.sarracen_dataframe.SarracenDataFrame,
-    locs      : np.ndarray,
+    sdf       : None|sarracen.SarracenDataFrame,
+    locs      : npt.ArrayLike,
     kernel    : None|sarracen.kernels.BaseKernel = None,
     kernel_rad: None|float = None,
+    hs_at_locs: None|float | npt.NDArray[np.float_] = None,
+    sdf_kdtree: None|kdtree.KDTree = None,
     ndim      : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
     verbose   : int = 3,
 ) -> np.ndarray|int:
     """Get the number of neighbour particles.
 
-    Pending optimization (add kd-tree?)
+
+    Provide either:
+    1. (Searching by hs_at_loc)
+        locs, hs_at_locs, (kernel_rad or kernel or sdf), (sdf_kdtree or (sdf and xyzs_names_list))
+        * You can set sdf to None if you provide both kernel_rad and sdf_kdtree.
+    2. (Searching by hs of the particles in sdf)
+        sdf, locs, xyzs_names_list.
+        * Remember to set hs_at_loc to None! (it is None by default)
+
     
     Parameters
     ----------
@@ -139,6 +192,17 @@ def get_no_neigh(
     kernel_rad: float
         radius of the smoothing kernel in unit of smoothing length
         If None, will infer from kernel; if kernel is also None, will use the one in sdf.
+
+    hs_at_locs : None|np.ndarray
+        The smoothing length at the locs.
+        *** if provided, will search for neighbours
+            using      the smoothing length of the locations and sdf_kdtree,
+            instead of the smoothing length of the particles.
+    
+    sdf_kdtree: None|kdtree.KDTree
+        kdTree for the particles.
+        Only used when searching by h of the locs (i.e. when given hs_at_locs)
+        if None, will build one.
         
     ndim: int
         dimension of the space. Default is 3 (for 3D).
@@ -157,6 +221,7 @@ def get_no_neigh(
         Depending on the shape of locs, returns float or array of float.
     """
 
+    do_squeeze : bool = False
     
     # init
     if kernel_rad is None:
@@ -164,40 +229,54 @@ def get_no_neigh(
             kernel = sdf.kernel
         kernel_rad = float(kernel.get_radius())
     locs = np.array(locs, copy=False, order='C')
-    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
-    hs   = np.array(sdf['h'], copy=False, order='C')                # (npart,)-shaped array
-    #hw_rad = kernel_rad * hs    # h * w_rad
-
-    # fix input shapes
-    if locs.ndim == 1:
-        locs = locs[np.newaxis, :]
-
-    nlocs = locs.shape[0]
-    npart = xyzs.shape[0]
-    
-    # sanity checks
-    if is_verbose(verbose, 'warn'):
-        if ndim != 3:
-            say('warn', None, verbose,
-                f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
-                "if the simulation is 3D, this means that the following calculations will be wrong.",
-                "Are you sure you know what you are doing?",
-            )
-        if xyzs.shape != (npart, ndim):
-            say('warn', None, verbose,
-                f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
-                "This is not supposed to happen and means that the following calculations will be wrong.",
-                "Please check input to this function.",
-            )
+    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped
 
     
-    ans = np.zeros(nlocs, dtype=int)
-    for i in range(nlocs):
-        ans[i] = np.count_nonzero(
-            np.sum((locs[i] - xyzs)**2, axis=-1)**0.5 / hs <= kernel_rad
-        )
+    if hs_at_locs is not None:
+        # search using provided h with kdTree
+        if sdf_kdtree is None: sdf_kdtree = kdtree.KDTree(xyzs)
+        neigh_inds_list  = sdf_kdtree.query_ball_point(locs, hs_at_locs * kernel_rad)
+        return np.array([len(neigh_inds) for neigh_inds in neigh_inds_list])
+    else:
 
-    return np.squeeze(ans)
+        hs   = np.array(sdf['h'], copy=False, order='C')    # (npart,)-shaped
+        #hw_rad = kernel_rad * hs    # h * w_rad
+    
+        # fix input shapes
+        if locs.ndim == 1:
+            locs = locs[np.newaxis, :]
+            do_squeeze = True
+        else:
+            do_squeeze = False
+    
+        nlocs = locs.shape[0]
+        npart = xyzs.shape[0]
+        
+        # sanity checks
+        if is_verbose(verbose, 'warn'):
+            if ndim != 3:
+                say('warn', None, verbose,
+                    f"You have set ndim={ndim}, which assumes a {ndim}D world instead of 3D.",
+                    "if the simulation is 3D, this means that the following calculations will be wrong.",
+                    "Are you sure you know what you are doing?",
+                )
+            if xyzs.shape != (npart, ndim):
+                say('warn', None, verbose,
+                    f"xyzs.shape={xyzs.shape} is not (npart, ndim)={(npart, ndim)}!",
+                    "This is not supposed to happen and means that the following calculations will be wrong.",
+                    "Please check input to this function.",
+                )
+    
+        
+        ans = np.zeros(nlocs, dtype=int)
+        for i in range(nlocs):
+            ans[i] = np.count_nonzero(
+                np.sum((locs[i] - xyzs)**2, axis=-1)**0.5 / hs <= kernel_rad
+            )
+
+        if do_squeeze: ans = np.squeeze(ans)
+    
+        return ans
 
 
 
