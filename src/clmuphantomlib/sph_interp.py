@@ -229,7 +229,8 @@ def get_no_neigh(
             kernel = sdf.kernel
         kernel_rad = float(kernel.get_radius())
     locs = np.array(locs, copy=False, order='C')
-    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped
+    if sdf is not None:
+        xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped
 
     
     if hs_at_locs is not None:
