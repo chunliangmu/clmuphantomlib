@@ -43,13 +43,14 @@ which is the length of below line of '-' characters.
 from . import sph_interp
 
 
-from .settings  import DEFAULT_SETTINGS
-from .geometry  import *
-#from .readwrite import *
-from .io        import *
-from .light     import get_photosphere_on_ray
-from .eos       import get_eos, get_eos_opacity
-from .mpdf      import get_filename_phantom_dumps, MyPhantomDataFrames
+from .settings   import DEFAULT_SETTINGS
+from .geometry   import *
+#from .readwrite  import *
+from .io         import *
+from .light      import get_photosphere_on_ray
+from .eos        import get_eos, get_eos_opacity
+from .mpdf       import get_filename_phantom_dumps, MyPhantomDataFrames
+from .units_util import *
 
 # .main is deprecrated but we will go with this for now.
-from .main      import *
+from .main       import *

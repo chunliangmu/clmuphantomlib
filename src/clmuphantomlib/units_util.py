@@ -112,7 +112,7 @@ def get_units_field_name(val_name: str) -> str:
         return 'opacity'
     elif val_name in {'lum'}:
         return 'lum'
-    elif val_name in {'tau', 'opticalDepth'}:
+    elif val_name in {'tau', 'opticalDepth', 'nneigh'}:
         return 'dimless'
     else:
         raise NotImplementedError
