@@ -49,11 +49,11 @@ import sarracen
 
 
 def get_h_from_rho(
-    rho: float | npt.NDArray[np.float_] | units.Quantity,
+    rho: float | npt.NDArray[np.float64] | units.Quantity,
     mpart: float,
     hfact: float,
     ndim :int = 3,
-) -> float | npt.NDArray[np.float_] | units.Quantity:
+) -> float | npt.NDArray[np.float64] | units.Quantity:
     """Getting smoothing length from density.
     
     Assuming Phantom,
@@ -68,11 +68,11 @@ def get_h_from_rho(
 
 @jit(nopython=True)
 def get_h_from_rho_nb(
-    rho: float | npt.NDArray[np.float_],
+    rho: float | npt.NDArray[np.float64],
     mpart: float,
     hfact: float,
     ndim :int = 3,
-) -> float | npt.NDArray[np.float_]:
+) -> float | npt.NDArray[np.float64]:
     """Getting smoothing length from density. Numba version.
     
     Assuming Phantom,
@@ -87,11 +87,11 @@ def get_h_from_rho_nb(
 
 
 def get_rho_from_h(
-    h: float | npt.NDArray[np.float_] | units.Quantity,
+    h: float | npt.NDArray[np.float64] | units.Quantity,
     mpart: float,
     hfact: float,
     ndim :int = 3,
-) -> float | npt.NDArray[np.float_] | units.Quantity:
+) -> float | npt.NDArray[np.float64] | units.Quantity:
     """Getting density from smoothing length.
     
     Assuming Phantom,
@@ -107,11 +107,11 @@ def get_rho_from_h(
 
 @jit(nopython=True)
 def get_rho_from_h_nb(
-    h: float | npt.NDArray[np.float_],
+    h: float | npt.NDArray[np.float64],
     mpart: float,
     hfact: float,
     ndim: int = 3,
-) -> float | npt.NDArray[np.float_]:
+) -> float | npt.NDArray[np.float64]:
     """Getting density from smoothing length. Numba version.
     
     Assuming Phantom,
@@ -161,7 +161,7 @@ def get_no_neigh(
     locs      : npt.ArrayLike,
     kernel    : None|sarracen.kernels.BaseKernel = None,
     kernel_rad: None|float = None,
-    hs_at_locs: None|float | npt.NDArray[np.float_] = None,
+    hs_at_locs: None|float | npt.NDArray[np.float64] = None,
     sdf_kdtree: None|kdtree.KDTree = None,
     ndim      : int = 3,
     xyzs_names_list : list = ['x', 'y', 'z'],
