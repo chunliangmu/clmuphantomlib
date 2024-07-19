@@ -58,18 +58,33 @@ def get_col_kernel_funcs(
 ) -> tuple[
     Callable[
         [
-            np.float64 | npt.NDArray[np.float64],
+            np.float64,
+            np.int64
+        ],
+        np.float64
+    ],
+    Callable[
+        [
+            np.float64,
+            np.float64,
             np.int64
         ],
         np.float64 | npt.NDArray[np.float64]
     ],
     Callable[
         [
-            np.float64 | npt.NDArray[np.float64],
-            np.float64 | npt.NDArray[np.float64],
+            npt.NDArray[np.float64],
             np.int64
         ],
-        np.float64 | npt.NDArray[np.float64]
+        npt.NDArray[np.float64]
+    ],
+    Callable[
+        [
+            npt.NDArray[np.float64],
+            npt.NDArray[np.float64],
+            np.int64
+        ],
+        npt.NDArray[np.float64]
     ],
 ]:
     """Get numba-accelerated cum-sum-along-z kernel & column kernel functions.
@@ -87,7 +102,7 @@ def get_col_kernel_funcs(
         Dimensions. should be 3 for 3D.
 
 
-    Returns: w_col(), w_csz()
+    Returns: w_col(), w_csz(), w_col_a(), w_csz_a()
     -------
     w_col(q_xy: np.float64, ndim: np.int64) -> np.float64
         Column kernel.
@@ -109,14 +124,15 @@ def get_col_kernel_funcs(
     wq_xy_z = kernel.w(qs_xy_z, ndim)
     # cumsum of the kernel along z; (q_xy.size, q_z.size)-shaped
     w_csz_arr = np.cumsum(wq_xy_z, axis=1) * dq_z
+
     
     @jit(nopython=True, fastmath=True)
     def w_csz(
-        q_xy: np.float64 | npt.NDArray[np.float64],
-        q_z : np.float64 | npt.NDArray[np.float64],
+        q_xy: np.float64,
+        q_z : np.float64,
         ndim: np.int64,
-    ) -> np.float64 | npt.NDArray[np.float64]:
-        """Cumulative summed kernel along z axis.
+    ) -> np.float64:
+        """Cumulative summed kernel along z axis - scalar version.
         ---------------------------------------------------------------------------
     
         Does 2D interpolation on a pre-calc-ed table to calc this.
@@ -125,11 +141,10 @@ def get_col_kernel_funcs(
         Parameters
         ----------
     
-        q_xy: float | float array
+        q_xy: float
             np.sqrt(x**2 + y**2) / h
-        q_z : float | float array
+        q_z : float
             z / h
-            Should be in the same shape as q_xy
         ndim: int
             Dimensions. should be 3 for 3D.
     
@@ -143,38 +158,71 @@ def get_col_kernel_funcs(
         ind_z  = (kernel_rad + q_z) / dq_z
     
         
-        ind_xy_m = get_floor_nb(ind_xy)
+        ind_xy_m = math.floor(ind_xy)
+        if ind_xy_m < 0:
+            return 0.
         ind_xy_p = ind_xy_m + 1
-        ind_z_m  = get_floor_nb(ind_z)
+        if ind_xy_p > kernel_nsamples:
+            return 0.
+        ind_z_m  = math.floor(ind_z)
+        if ind_z_m < 0:
+            return 0.
         ind_z_p  = ind_z_m  + 1
-        
-        if ind_xy_m < 0 or ind_xy_p > kernel_nsamples or ind_z_m < 0:
-            ans = 0
-        else:
-            tx = ind_xy - ind_xy_m
-            tz = ind_z  - ind_z_m
+        tx = ind_xy - ind_xy_m
+        tz = ind_z  - ind_z_m
+        if ind_z_p > 2*kernel_nsamples:
+            return (
+                (1.-tx) * w_csz_arr[ind_xy_m, -1] +
+                    tx  * w_csz_arr[ind_xy_p, -1]
+            )
             
-            if  ind_z_p > 2*kernel_nsamples:
-                ans = (
-                    (1.-tx) * w_csz_arr[ind_xy_m, -1] +
-                        tx  * w_csz_arr[ind_xy_p, -1]
-                )
-            else:
-                ans = (
-                    (1.-tx) * (1.-tz) * w_csz_arr[ind_xy_m  , ind_z_m  ] +
-                    (1.-tx) *     tz  * w_csz_arr[ind_xy_m  , ind_z_m+1] +
-                        tx  * (1.-tz) * w_csz_arr[ind_xy_m+1, ind_z_m  ] +
-                        tx  *     tz  * w_csz_arr[ind_xy_m+1, ind_z_m+1]
-                )
-        return ans
+        # else: in range.
+        return (
+            (1.-tx) * (1.-tz) * w_csz_arr[ind_xy_m, ind_z_m] +
+            (1.-tx) *     tz  * w_csz_arr[ind_xy_m, ind_z_p] +
+                tx  * (1.-tz) * w_csz_arr[ind_xy_p, ind_z_m] +
+                tx  *     tz  * w_csz_arr[ind_xy_p, ind_z_p]
+        )
+
+
+    @jit(nopython=True, fastmath=True)
+    def w_csz_a(
+        qs_xy: npt.NDArray[np.float64],
+        qs_z : npt.NDArray[np.float64],
+        ndim: np.int64,
+    ) -> npt.NDArray[np.float64]:
+        """Cumulative summed kernel along z axis - array version.
+        ---------------------------------------------------------------------------
     
+        Does 2D interpolation on a pre-calc-ed table to calc this.
+    
+        
+        Parameters
+        ----------
+    
+        q_xy: float | float array
+            np.sqrt(x**2 + y**2) / h
+        q_z : float | float array
+            z / h
+            MUST be in the same shape as q_xy
+        ndim: int
+            Dimensions. should be 3 for 3D.
+    
+        Returns
+        -------
+        ans
+            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+        """
+        return np.array([w_csz(qs_xy[i], qs_z[i], ndim) for i in range(len(qs_xy))])
+
+
     
     @jit(nopython=True, fastmath=True)
     def w_col(
-        q_xy: np.float64 | npt.NDArray[np.float64],
+        q_xy: np.float64,
         ndim: np.int64,
-    ) -> np.float64 | npt.NDArray[np.float64]:
-        """Column kernel.
+    ) -> np.float64:
+        """Column kernel - scalar version.
         ---------------------------------------------------------------------------
     
         Does interpolation on a pre-calc-ed table to calc this.
@@ -183,7 +231,7 @@ def get_col_kernel_funcs(
         Parameters
         ----------
     
-        q_xy: float | float array
+        q_xy: float array
             np.sqrt(x**2 + y**2) / h
         ndim: int
             Dimensions. should be 3 for 3D.
@@ -195,20 +243,48 @@ def get_col_kernel_funcs(
         """
     
         ind_xy = q_xy / dq_xy
-        ind_xy_m = get_floor_nb(ind_xy)
+        ind_xy_m = math.floor(ind_xy)
+        if ind_xy_m < 0:
+            return 0.
         ind_xy_p = ind_xy_m + 1
-        
-        if ind_xy_m < 0 or ind_xy_p > kernel_nsamples:
-            ans = 0
-        else:
-            tx = ind_xy - ind_xy_m
-            ans = (
-                (1.-tx) * w_csz_arr[ind_xy_m, -1] +
-                    tx  * w_csz_arr[ind_xy_p, -1]
-            )
-        return ans
+        if ind_xy_p > kernel_nsamples:
+            return 0.
+        tx = ind_xy - ind_xy_m
+        return (
+            (1.-tx) * w_csz_arr[ind_xy_m, -1] +
+                tx  * w_csz_arr[ind_xy_p, -1]
+        )
 
-    return w_col, w_csz
+
+    
+    @jit(nopython=True, fastmath=True)
+    def w_col_a(
+        qs_xy: npt.NDArray[np.float64],
+        ndim: np.int64,
+    ) -> npt.NDArray[np.float64]:
+        """Column kernel - array version.
+        ---------------------------------------------------------------------------
+        
+        Does interpolation on a pre-calc-ed table to calc this.
+    
+        
+        Parameters
+        ----------
+    
+        q_xy: float | float array
+            np.sqrt(x**2 + y**2) / h
+        ndim: int
+            Dimensions. should be 3 for 3D.
+    
+    
+        Returns
+        -------
+        ans
+            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+        """
+        return np.array([w_col(q_xy, ndim) for q_xy in qs_xy])
+
+    return w_col, w_csz, w_col_a, w_csz_a
 
 
 
