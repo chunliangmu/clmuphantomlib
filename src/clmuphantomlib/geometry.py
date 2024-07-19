@@ -14,8 +14,10 @@ Owner: Chunliang Mu
 # Init
 
 
+import math
 import numpy as np
 from numpy import pi
+from numpy import typing as npt
 import numba
 from numba import jit
 
@@ -23,6 +25,15 @@ from numba import jit
 
 
 # Functions
+
+
+
+@jit(nopython=True, fastmath=True)
+def get_floor_nb(x: np.float64 | npt.NDArray[np.float64]) -> np.int64 | npt.NDArray[np.int64]:
+    if isinstance(x, float):
+        return math.floor(x)
+    else:
+        return np.floor(x).astype(np.int64)
 
 
 

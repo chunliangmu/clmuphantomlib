@@ -29,6 +29,7 @@ which is the length of below line of '-' characters.
 
 #  import (my libs)
 from .log import is_verbose, say
+from .geometry import get_floor_nb
 
 #  import (general)
 import math
@@ -54,7 +55,23 @@ def get_col_kernel_funcs(
     kernel : sarracen.kernels.BaseKernel,
     kernel_nsamples : int = 1000,
     ndim   : int = 3,
-):
+) -> tuple[
+    Callable[
+        [
+            np.float64 | npt.NDArray[np.float64],
+            np.int64
+        ],
+        np.float64 | npt.NDArray[np.float64]
+    ],
+    Callable[
+        [
+            np.float64 | npt.NDArray[np.float64],
+            np.float64 | npt.NDArray[np.float64],
+            np.int64
+        ],
+        np.float64 | npt.NDArray[np.float64]
+    ],
+]:
     """Get numba-accelerated cum-sum-along-z kernel & column kernel functions.
     ---------------------------------------------------------------------------
 
@@ -95,10 +112,10 @@ def get_col_kernel_funcs(
     
     @jit(nopython=True, fastmath=True)
     def w_csz(
-        q_xy: np.float64,
-        q_z : np.float64,
+        q_xy: np.float64 | npt.NDArray[np.float64],
+        q_z : np.float64 | npt.NDArray[np.float64],
         ndim: np.int64,
-    ) -> np.float64:
+    ) -> np.float64 | npt.NDArray[np.float64]:
         """Cumulative summed kernel along z axis.
         ---------------------------------------------------------------------------
     
@@ -108,10 +125,11 @@ def get_col_kernel_funcs(
         Parameters
         ----------
     
-        q_xy: float
+        q_xy: float | float array
             np.sqrt(x**2 + y**2) / h
-        q_z : float
+        q_z : float | float array
             z / h
+            Should be in the same shape as q_xy
         ndim: int
             Dimensions. should be 3 for 3D.
     
@@ -125,9 +143,9 @@ def get_col_kernel_funcs(
         ind_z  = (kernel_rad + q_z) / dq_z
     
         
-        ind_xy_m = math.floor(ind_xy)
+        ind_xy_m = get_floor_nb(ind_xy)
         ind_xy_p = ind_xy_m + 1
-        ind_z_m  = math.floor(ind_z)
+        ind_z_m  = get_floor_nb(ind_z)
         ind_z_p  = ind_z_m  + 1
         
         if ind_xy_m < 0 or ind_xy_p > kernel_nsamples or ind_z_m < 0:
@@ -153,9 +171,9 @@ def get_col_kernel_funcs(
     
     @jit(nopython=True, fastmath=True)
     def w_col(
-        q_xy: np.float64,
+        q_xy: np.float64 | npt.NDArray[np.float64],
         ndim: np.int64,
-    ) -> np.float64:
+    ) -> np.float64 | npt.NDArray[np.float64]:
         """Column kernel.
         ---------------------------------------------------------------------------
     
@@ -165,7 +183,7 @@ def get_col_kernel_funcs(
         Parameters
         ----------
     
-        q_xy: float
+        q_xy: float | float array
             np.sqrt(x**2 + y**2) / h
         ndim: int
             Dimensions. should be 3 for 3D.
@@ -177,7 +195,7 @@ def get_col_kernel_funcs(
         """
     
         ind_xy = q_xy / dq_xy
-        ind_xy_m = math.floor(ind_xy)
+        ind_xy_m = get_floor_nb(ind_xy)
         ind_xy_p = ind_xy_m + 1
         
         if ind_xy_m < 0 or ind_xy_p > kernel_nsamples:
