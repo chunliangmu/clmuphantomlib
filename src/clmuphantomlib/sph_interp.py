@@ -29,7 +29,7 @@ which is the length of below line of '-' characters.
 
 #  import (my libs)
 from .log import is_verbose, say
-from .geometry import get_floor_nb
+#from .geometry import get_floor_nb
 
 #  import (general)
 import math
