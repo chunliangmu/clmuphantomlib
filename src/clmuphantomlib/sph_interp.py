@@ -50,7 +50,11 @@ import sarracen
 
 
 
-def get_col_kernel_funcs(kernel : sarracen.kernels.BaseKernel, kernel_nsamples : int = 1000):
+def get_col_kernel_funcs(
+    kernel : sarracen.kernels.BaseKernel,
+    kernel_nsamples : int = 1000,
+    ndim   : int = 3,
+):
     """Get numba-accelerated cum-sum-along-z kernel & column kernel functions.
     ---------------------------------------------------------------------------
 
@@ -62,6 +66,8 @@ def get_col_kernel_funcs(kernel : sarracen.kernels.BaseKernel, kernel_nsamples :
        number of sample points. Determines resolution. 
        Total data points used are (2*kernel_nsamples+1) * (kernel_nsamples+1)
 
+    ndim : int
+        Dimensions. should be 3 for 3D.
 
     Returns: w_csz(), w_col()
     -------
@@ -104,7 +110,7 @@ def get_col_kernel_funcs(kernel : sarracen.kernels.BaseKernel, kernel_nsamples :
         q_z : float
             z / h
         ndim: int
-            dimensions. should be 3 for 3D.
+            Dimensions. should be 3 for 3D.
     
         Returns
         -------
@@ -159,7 +165,7 @@ def get_col_kernel_funcs(kernel : sarracen.kernels.BaseKernel, kernel_nsamples :
         q_xy: float
             np.sqrt(x**2 + y**2) / h
         ndim: int
-            dimensions. should be 3 for 3D.
+            Dimensions. should be 3 for 3D.
     
         Returns
         -------
