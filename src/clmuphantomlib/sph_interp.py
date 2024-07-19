@@ -69,14 +69,17 @@ def get_col_kernel_funcs(
     ndim : int
         Dimensions. should be 3 for 3D.
 
-    Returns: w_csz(), w_col()
+
+    Returns: w_col(), w_csz()
     -------
-    w_csz(q_xy: np.float64, q_z : np.float64, ndim: np.int64) -> np.float64
-        Cumulative summed kernel along z axis.
-        Returns \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
     w_col(q_xy: np.float64, ndim: np.int64) -> np.float64
         Column kernel.
         Returns \int_{-w_\mathrm{rad}}^{+w_\mathrm{rad}} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+        
+    w_csz(q_xy: np.float64, q_z : np.float64, ndim: np.int64) -> np.float64
+        Cumulative summed kernel along z axis.
+        Returns \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+
     """
 
     kernel_rad = kernel.get_radius()
@@ -187,7 +190,7 @@ def get_col_kernel_funcs(
             )
         return ans
 
-    return w_csz, w_col
+    return w_col, w_csz
 
 
 
