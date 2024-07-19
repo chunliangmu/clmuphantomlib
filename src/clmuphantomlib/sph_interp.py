@@ -31,6 +31,7 @@ which is the length of below line of '-' characters.
 from .log import is_verbose, say
 
 #  import (general)
+import math
 from typing import Callable
 import numpy as np
 from numpy import typing as npt
@@ -45,6 +46,143 @@ import sarracen
 
 
 # Functions
+
+
+
+
+def get_col_kernel_funcs(kernel : sarracen.kernels.BaseKernel, kernel_nsamples : int = 1000):
+    """Get numba-accelerated cum-sum-along-z kernel & column kernel functions.
+    ---------------------------------------------------------------------------
+
+    Parameters
+    ----------
+    kernel : sarracen.kernels.BaseKernel
+    
+    kernel_nsamples: int
+       number of sample points. Determines resolution. 
+       Total data points used are (2*kernel_nsamples+1) * (kernel_nsamples+1)
+
+
+    Returns: w_csz(), w_col()
+    -------
+    w_csz(q_xy: np.float64, q_z : np.float64, ndim: np.int64) -> np.float64
+        Cumulative summed kernel along z axis.
+        Returns \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+    w_col(q_xy: np.float64, ndim: np.int64) -> np.float64
+        Column kernel.
+        Returns \int_{-w_\mathrm{rad}}^{+w_\mathrm{rad}} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+    """
+
+    kernel_rad = kernel.get_radius()
+    
+    qs_z  = np.linspace(-kernel_rad, kernel_rad, 2*kernel_nsamples+1)
+    qs_xy = np.linspace(0., kernel_rad, kernel_nsamples+1)
+    dq_z  = qs_z[1] - qs_z[0]
+    dq_xy = qs_xy[1] - qs_xy[0]
+    qs_xy_z = np.sqrt((qs_xy**2)[:, np.newaxis] + (qs_z**2)[np.newaxis, :])
+    wq_xy_z = kernel.w(qs_xy_z, ndim)
+    # cumsum of the kernel along z; (q_xy.size, q_z.size)-shaped
+    w_csz_arr = np.cumsum(wq_xy_z, axis=1) * dq_z
+    
+    @jit(nopython=True, fastmath=True)
+    def w_csz(
+        q_xy: np.float64,
+        q_z : np.float64,
+        ndim: np.int64,
+    ) -> np.float64:
+        """Cumulative summed kernel along z axis.
+        ---------------------------------------------------------------------------
+    
+        Does 2D interpolation on a pre-calc-ed table to calc this.
+    
+        
+        Parameters
+        ----------
+    
+        q_xy: float
+            np.sqrt(x**2 + y**2) / h
+        q_z : float
+            z / h
+        ndim: int
+            dimensions. should be 3 for 3D.
+    
+        Returns
+        -------
+        ans
+            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+        """
+    
+        ind_xy = q_xy / dq_xy
+        ind_z  = (kernel_rad + q_z) / dq_z
+    
+        
+        ind_xy_m = math.floor(ind_xy)
+        ind_xy_p = ind_xy_m + 1
+        ind_z_m  = math.floor(ind_z)
+        ind_z_p  = ind_z_m  + 1
+        
+        if ind_xy_m < 0 or ind_xy_p > kernel_nsamples or ind_z_m < 0:
+            ans = 0
+        else:
+            tx = ind_xy - ind_xy_m
+            tz = ind_z  - ind_z_m
+            
+            if  ind_z_p > 2*kernel_nsamples:
+                ans = (
+                    (1.-tx) * w_csz_arr[ind_xy_m, -1] +
+                        tx  * w_csz_arr[ind_xy_p, -1]
+                )
+            else:
+                ans = (
+                    (1.-tx) * (1.-tz) * w_csz_arr[ind_xy_m  , ind_z_m  ] +
+                    (1.-tx) *     tz  * w_csz_arr[ind_xy_m  , ind_z_m+1] +
+                        tx  * (1.-tz) * w_csz_arr[ind_xy_m+1, ind_z_m  ] +
+                        tx  *     tz  * w_csz_arr[ind_xy_m+1, ind_z_m+1]
+                )
+        return ans
+    
+    
+    @jit(nopython=True, fastmath=True)
+    def w_col(
+        q_xy: np.float64,
+        ndim: np.int64,
+    ) -> np.float64:
+        """Column kernel.
+        ---------------------------------------------------------------------------
+    
+        Does interpolation on a pre-calc-ed table to calc this.
+    
+        
+        Parameters
+        ----------
+    
+        q_xy: float
+            np.sqrt(x**2 + y**2) / h
+        ndim: int
+            dimensions. should be 3 for 3D.
+    
+        Returns
+        -------
+        ans
+            \int_{-w_\mathrm{rad}}^{+w_\mathrm{rad}} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+        """
+    
+        ind_xy = q_xy / dq_xy
+        ind_xy_m = math.floor(ind_xy)
+        ind_xy_p = ind_xy_m + 1
+        
+        if ind_xy_m < 0 or ind_xy_p > kernel_nsamples:
+            ans = 0
+        else:
+            tx = ind_xy - ind_xy_m
+            ans = (
+                (1.-tx) * w_csz_arr[ind_xy_m, -1] +
+                    tx  * w_csz_arr[ind_xy_p, -1]
+            )
+        return ans
+
+    return w_csz, w_col
+
 
 
 

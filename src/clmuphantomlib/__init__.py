@@ -51,6 +51,7 @@ from .light      import get_photosphere_on_ray
 from .eos        import get_eos, get_eos_opacity
 from .mpdf       import get_filename_phantom_dumps, MyPhantomDataFrames
 from .units_util import *
+from .sph_interp import get_col_kernel_funcs
 
 # .main is deprecrated but we will go with this for now.
 from .main       import *
