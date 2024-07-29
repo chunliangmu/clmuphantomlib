@@ -46,8 +46,6 @@ def get_dist2_between_2pt_nb(pt1: np.ndarray, pt2: np.ndarray) -> np.ndarray|np.
     ----------
     pt1, pt2: (..., N)-dimensional numpy array.
     """
-    #pt1 = np.array(pt1, copy=False)
-    #pt2 = np.array(pt2, copy=False)
     return np.sum((pt2 - pt1)**2, axis=-1)
 
 get_dist2_between_2pt = get_dist2_between_2pt_nb
@@ -91,9 +89,9 @@ def get_closest_pt_on_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.ndarray:
     """
     if len(line) != 2:
         raise ValueError("Input var 'line' should have 2 points (i.e. with shape (2, N)), but ", len(line), " is not 2.")
-    #pt0 = np.array(pt0, copy=False)
-    pt1 = line[0] #np.array(line[0], copy=False)
-    pt2 = line[1] #np.array(line[1], copy=False)
+    #pt0 = np.asarray(pt0)
+    pt1 = line[0] #np.asarray(line[0])
+    pt2 = line[1] #np.asarray(line[1])
     t_0 = np.sum((pt0 - pt1) * (pt2 - pt1), axis=-1) / np.sum((pt2 - pt1)**2, axis=-1)
     X_t = pt1 + t_0.reshape((*t_0.shape,1)) * (pt2 - pt1)
     return X_t
@@ -151,8 +149,8 @@ def get_dist2_from_pt_to_line_nb(pt0: np.ndarray, line: np.ndarray) -> np.float6
     """
 
     # get closest point on line
-    pt1 = line[0] #np.array(line[0], copy=False)
-    pt2 = line[1] #np.array(line[1], copy=False)
+    pt1 = line[0] #np.asarray(line[0])
+    pt2 = line[1] #np.asarray(line[1])
     t_0 = np.sum((pt0 - pt1) * (pt2 - pt1), axis=-1) / np.sum((pt2 - pt1)**2, axis=-1)
     X_t = pt1 + t_0 * (pt2 - pt1)
     # get distance between these two points
@@ -202,7 +200,7 @@ def get_rays_unit_vec(rays: np.ndarray) -> np.ndarray:
     ray_unit_vec: (M, N)-dimensional np.ndarray
         unit vector of ray
     """
-    ray = np.array(rays, copy=False)
+    ray = np.asarray(rays)
     ray_unit_vec = ray[..., 1, :] - ray[..., 0, :]
     ray_unit_vec = ray_unit_vec / np.sum(ray_unit_vec**2, axis=-1)[:, np.newaxis]**0.5
     return ray_unit_vec

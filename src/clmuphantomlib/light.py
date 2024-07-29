@@ -268,7 +268,7 @@ def get_photosphere_on_ray(
         kernel = sdf.kernel
     if do_skip_zero_dtau_pts:
         pts_order = pts_order[np.where(dtaus[pts_order])[0]]
-    ray_0 = np.array(ray[0], copy=False)
+    ray_0 = np.asarray(ray[0], copy=False)
     pts_ordered    = np.array(sdf[['x', 'y', 'z']].iloc[pts_order])
     hs_ordered     = np.array(sdf[ 'h'           ].iloc[pts_order])
     #kappas_ordered = np.array(sdf[ 'kappa'       ].iloc[pts_order])

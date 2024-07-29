@@ -469,9 +469,9 @@ def get_no_neigh(
         if kernel is None:
             kernel = sdf.kernel
         kernel_rad = float(kernel.get_radius())
-    locs = np.array(locs, copy=False, order='C')
+    locs = np.asarray(locs, order='C')
     if sdf is not None:
-        xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped
+        xyzs = np.asarray(sdf[xyzs_names_list], order='C')    # (npart, ndim)-shaped
 
     
     if hs_at_locs is not None:
@@ -481,7 +481,7 @@ def get_no_neigh(
         return np.array([len(neigh_inds) for neigh_inds in neigh_inds_list])
     else:
 
-        hs   = np.array(sdf['h'], copy=False, order='C')    # (npart,)-shaped
+        hs   = np.asarray(sdf['h'], order='C')    # (npart,)-shaped
         #hw_rad = kernel_rad * hs    # h * w_rad
     
         # fix input shapes
@@ -744,10 +744,10 @@ def get_sph_interp_phantom(
     if kernel is None:
         kernel = sdf.kernel
     kernel_rad = float(kernel.get_radius())
-    locs = np.array(locs, copy=False, order='C')
-    vals = np.array(sdf[val_names], copy=False, order='C')
-    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C')    # (npart, ndim)-shaped array
-    hs   = np.array(sdf['h'], copy=False, order='C')                # (npart,)-shaped array
+    locs = np.asarray(locs, order='C')
+    vals = np.asarray(sdf[val_names], order='C')
+    xyzs = np.asarray(sdf[xyzs_names_list], order='C')    # (npart, ndim)-shaped array
+    hs   = np.asarray(sdf['h'], order='C')                # (npart,)-shaped array
 
     
     # fix input shapes
@@ -906,9 +906,9 @@ def get_sph_gradient_phantom(
     ans  : (nlocs, ndim, nvals)-shaped np.ndarray
     """
 
-    xyzs = np.array(sdf[xyzs_names_list], copy=False, order='C') # shape=(npart, ndim)
-    vals = np.array(sdf[val_names], copy=False, order='C') # shape=(npart, nvals)
-    hs   = np.array(sdf['h'], copy=False, order='C')  # (npart,)
+    xyzs = np.asarray(sdf[xyzs_names_list], order='C') # shape=(npart, ndim)
+    vals = np.asarray(sdf[val_names], order='C') # shape=(npart, nvals)
+    hs   = np.asarray(sdf['h'], order='C')  # (npart,)
 
     
     if vals.ndim == 1:
