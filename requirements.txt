@@ -1,0 +1,8 @@
+astropy==6.1.2
+h5py==3.11.0
+matplotlib==3.9.1.post1
+moviepy==1.0.3
+numba==0.60.0
+numpy==2.0.1
+sarracen==1.2.3
+scipy==1.14.0
