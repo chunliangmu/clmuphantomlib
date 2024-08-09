@@ -964,6 +964,7 @@ def get_sph_gradient_phantom(
         qs_ij = rs_ij_norm / hs[js]    # shape=(njs,)
 
         # get the gradient for i-th particle
+        # note: Vj - Vi but ri - rj, because dw_dq is negative.
         ans[i] = np.sum(
             (
                 (vals[js] - vals_at_locs[i]) / hs[js][:, np.newaxis]
