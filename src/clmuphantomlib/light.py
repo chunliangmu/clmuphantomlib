@@ -199,7 +199,7 @@ def get_photosphere_on_ray(
     
     hfact, mpart: float
         Only useful if you are calc-ing 'h'
-        $h_\mathrm{fact}$ and particle mass used in the phantom sim.
+        $h_\\mathrm{fact}$ and particle mass used in the phantom sim.
         If None, will get from sdf.params['hfact'] and sdf.params['mass']
 
     eos: .eos.base.EoS_BASE

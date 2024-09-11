@@ -106,11 +106,11 @@ def get_col_kernel_funcs(
     -------
     w_col(q_xy: np.float64, ndim: np.int64) -> np.float64
         Column kernel.
-        Returns \int_{-w_\mathrm{rad}}^{+w_\mathrm{rad}} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+        Returns \\int_{-w_\\mathrm{rad}}^{+w_\\mathrm{rad}} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z
         
     w_csz(q_xy: np.float64, q_z : np.float64, ndim: np.int64) -> np.float64
         Cumulative summed kernel along z axis.
-        Returns \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z
+        Returns \\int_{-w_\\mathrm{rad}}^{q_z} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z
 
     """
 
@@ -151,7 +151,7 @@ def get_col_kernel_funcs(
         Returns
         -------
         ans
-            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+            \\int_{-w_\\mathrm{rad}}^{q_z} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z 
         """
     
         ind_xy = q_xy / dq_xy
@@ -211,7 +211,7 @@ def get_col_kernel_funcs(
         Returns
         -------
         ans
-            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+            \\int_{-w_\\mathrm{rad}}^{q_z} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z 
         """
         return np.array([w_csz(qs_xy[i], qs_z[i], ndim) for i in range(len(qs_xy))])
 
@@ -239,7 +239,7 @@ def get_col_kernel_funcs(
         Returns
         -------
         ans
-            \int_{-w_\mathrm{rad}}^{+w_\mathrm{rad}} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+            \\int_{-w_\\mathrm{rad}}^{+w_\\mathrm{rad}} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z 
         """
     
         ind_xy = q_xy / dq_xy
@@ -280,7 +280,7 @@ def get_col_kernel_funcs(
         Returns
         -------
         ans
-            \int_{-w_\mathrm{rad}}^{q_z} w(\sqrt{q_{xy}^2 + q_z^2}) dq_z 
+            \\int_{-w_\\mathrm{rad}}^{q_z} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z 
         """
         return np.array([w_col(q_xy, ndim) for q_xy in qs_xy])
 
@@ -537,7 +537,7 @@ def _get_sph_interp_phantom_np_basic(
 ) -> np.ndarray:
     """SPH interpolation subprocess. Most basic form.
 
-    Basic version uses basic kernel interpolation: A =  <A> = \sum_j A_j w(q_j) / h_fact**ndim,
+    Basic version uses basic kernel interpolation: A =  <A> = \\sum_j A_j w(q_j) / h_fact**ndim,
         with the assumption of Phantom h: rho = hfact**ndim * (m / h**ndim)
 
     WARNING:
@@ -604,7 +604,7 @@ def _get_sph_interp_phantom_np(
 ) -> np.ndarray:
     """SPH interpolation subprocess.
 
-    Improved version corrects for zero-th order error in the basic version: A = <A> / <1> = \sum_j A_j w(q_j) / \sum_j w(q_j),
+    Improved version corrects for zero-th order error in the basic version: A = <A> / <1> = \\sum_j A_j w(q_j) / \\sum_j w(q_j),
         with the assumption of Phantom h: rho = hfact**ndim * (m / h**ndim)
         
     WARNING:
@@ -686,7 +686,7 @@ def get_sph_interp_phantom(
     Theories:
     In SPH kernel interpolation theories, for arbitrary quantity A,
         \\braket{A} (\\mathbf{r}) 
-        \\equiv \sum_{j} \\frac{m_j A_j}{\\rho_j h_j^d} w(q_j(\\mathbf{r}))
+        \\equiv \\sum_{j} \\frac{m_j A_j}{\\rho_j h_j^d} w(q_j(\\mathbf{r}))
         = \\frac{1}{h_\\mathrm{fact}^d} \\sum_{j} A_j w(q_j(\\mathbf{r}))
     where rho = hfact**d * (m / h**d) is assumed.
 
@@ -839,8 +839,8 @@ def get_sph_gradient_phantom(
 
     Theories:
     In SPH kernel interpolation theories, for arbitrary quantity A,
-        \nabla A \approx \braket{\nabla A} - A \braket{\nabla 1}
-        = \frac{1}{h_\mathrm{fact}^d} \sum_{j} \frac{A_j-A}{h_j} \frac{dw}{dq}(q_j) \hat{\mathbf{r}}
+        \\nabla A \\approx \\braket{\\nabla A} - A \\braket{\\nabla 1}
+        = \\frac{1}{h_\\mathrm{fact}^d} \\sum_{j} \\frac{A_j-A}{h_j} \\frac{dw}{dq}(q_j) \\hat{\\mathbf{r}}
     where rho = hfact**d * (m / h**d) is assumed.
         
     

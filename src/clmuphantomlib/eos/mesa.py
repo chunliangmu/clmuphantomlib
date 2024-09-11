@@ -69,7 +69,7 @@ class _EoS_MESA_table_opacity:
         (Because Phantom assumes a constant pre-determined X and Z when loading MESA EoS-
          it does linear interpolation on that.)
 
-        Using Z, X, T (temperature), R ($\log_{10}{R} \equiv \log_{10}{\rho} + 18 - 3 \log_{10}{T}$)
+        Using Z, X, T (temperature), R ($\\log_{10}{R} \\equiv \\log_{10}{\\rho} + 18 - 3 \\log_{10}{T}$)
         
     
         Returns self.
