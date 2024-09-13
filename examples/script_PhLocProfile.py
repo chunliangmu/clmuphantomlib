@@ -35,7 +35,7 @@ import matplotlib as mpl
 # import modules listed in ./lib/
 
 import clmuphantomlib as mupl
-from clmuphantomlib.readwrite import json_load, json_dump
+from clmuphantomlib.io  import json_load, json_dump
 from clmuphantomlib.settings import DEFAULT_SETTINGS as settings
 from clmuphantomlib.log import is_verbose, say
 from clmuphantomlib.units_util import set_as_quantity
@@ -115,7 +115,7 @@ def write_ph_pars(
     file_indexes : np.ndarray,
     ray_no: int, # no of rays on xy-axis
     #rays: np.ndarray,    # list of rays
-    eoses : (mupl.eos_base.EoS_Base, mupl.eos_mesa.EoS_MESA_opacity),
+    eoses : (mupl.eos.EoS_Base, mupl.eos.EoS_MESA_opacity),
     photosphere_tau = PHOTOSPHERE_TAU,
     verbose : int = 2,
 ):
@@ -264,7 +264,7 @@ if __name__ == '__main__':
         #file_indexes = job_profile['file_indexes']
         file_indexes = [2000, 4800]
         eos = mupl.get_eos(job_profile['ieos'], job_profile['params'], settings)
-        eos_opacity = mupl.eos_mesa.EoS_MESA_opacity(job_profile['params'], settings)
+        eos_opacity = mupl.eos.EoS_MESA_opacity(job_profile['params'], settings)
     
         
         if True: #NPROCESSES <= 1:

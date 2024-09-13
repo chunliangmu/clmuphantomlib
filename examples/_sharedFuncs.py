@@ -10,7 +10,7 @@ import numpy as np
 from astropy import units
 from clmuphantomlib.log import is_verbose, say
 from clmuphantomlib import MyPhantomDataFrames, get_eos
-from clmuphantomlib.eos_mesa   import EoS_MESA_opacity
+from clmuphantomlib.eos import EoS_MESA_opacity
 from clmuphantomlib.units_util import get_val_in_unit
 
 

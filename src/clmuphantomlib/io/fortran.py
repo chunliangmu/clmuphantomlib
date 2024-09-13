@@ -45,11 +45,12 @@ import io
 
 def fortran_read_file_unformatted(
     fp: io.BufferedReader,
-    t: str,
-    no: None|int = None,
+    t: str,    # type
+    no: None|int = None,    # no of bytes
+    no_bytes_marker: int = 4, # no of bytes of record marker
     verbose: int = 3,
 ) -> tuple:
-    """Read one record from an unformatted file saved by fortran.
+    """Read one record from a binary (a.k.a. unformatted) file saved by fortran.
 
     Because stupid fortran save two additional 4 byte int before and after each record respectively when saving unformatted data.
     (Fortran fans please don't hit me)
@@ -67,19 +68,25 @@ def fortran_read_file_unformatted(
     no: int|None
         Number of data in this record. if None, will infer from record.
         
+    no_bytes_marker: int 
+        no of bytes of record marker. Should be around 4 to 12.
+        Depends on the compiler of the fortran code that generates the data,
+            Because fortran is such an amazing programing language :-)
+        
     verbose: int
         How much erros, warnings, notes, and debug info to be print on screen.
     """
 
-    if t in ['i', 'int', 'integer(4)']:
+    if t in {'i', 'int', 'integer(4)', 'integer'}:
         t_format = 'i'
         t_no_bytes = 4
-    elif t in ['f', 'float', 'real(4)']:
+    elif t in {'f', 'float', 'real(4)', 'single'}:
         t_format = 'f'
         t_no_bytes = 4
-    elif t in ['d', 'double', 'real(8)']:
+    elif t in {'d', 'double', 'real(8)', 'dp'}:
         t_format = 'd'
         t_no_bytes = 8
+    # add more data type here!
     else:
         say('err', None, verbose,
             f"Unrecognized data type t={t}."
@@ -87,7 +94,7 @@ def fortran_read_file_unformatted(
         if is_verbose(verbose, 'fatal'):
             raise NotImplementedError("Unrecognized data type. Please add it to the code.")
     
-    rec_no_bytes = struct.unpack('i', fp.read(4))[0]
+    rec_no_bytes = struct.unpack('i', fp.read(no_bytes_marker))[0]
     no_in_record = int(rec_no_bytes / t_no_bytes)
     if no is None:
         no = no_in_record
@@ -102,7 +109,7 @@ def fortran_read_file_unformatted(
             )
 
     data = struct.unpack(f'{no}{t_format}', fp.read(rec_no_bytes_used))
-    rec_no_bytes_again = struct.unpack('i', fp.read(4))[0]
+    rec_no_bytes_again = struct.unpack('i', fp.read(no_bytes_marker))[0]
     if rec_no_bytes != rec_no_bytes_again:
         say('warn', None, verbose,
             "The no of bytes recorded in the beginning and the end of the record did not match!",

@@ -37,7 +37,7 @@ import matplotlib as mpl
 # import modules listed in ./lib/
 
 import clmuphantomlib as mupl
-from clmuphantomlib.readwrite import json_load, json_dump
+from clmuphantomlib.io  import json_load, json_dump
 from clmuphantomlib.settings import DEFAULT_SETTINGS as settings
 from clmuphantomlib.log import error, warn, note, debug_info
 from clmuphantomlib.log import is_verbose, say
@@ -118,7 +118,7 @@ def write_ph_loc_axes(
     job_name : str,
     file_indexes : np.ndarray,
     rays_dir_def : dict,    # dict of list
-    eoses : (mupl.eos_base.EoS_Base, mupl.eos_mesa.EoS_MESA_opacity),
+    eoses : (mupl.eos.EoS_Base, mupl.eos.EoS_MESA_opacity),
     photosphere_tau = PHOTOSPHERE_TAU,
     verbose : int = 2,
 ):
@@ -310,7 +310,7 @@ if __name__ == '__main__':
         file_indexes = job_profile['file_indexes']
         job_name     = job_profile['job_name']
         eos          = mupl.get_eos(job_profile['ieos'], job_profile['params'], settings)
-        eos_opacity  = mupl.eos_mesa.EoS_MESA_opacity(job_profile['params'], settings)
+        eos_opacity  = mupl.eos.EoS_MESA_opacity(job_profile['params'], settings)
     
         
         if NPROCESSES <= 1:

@@ -45,7 +45,6 @@ from . import sph_interp
 
 from .settings   import DEFAULT_SETTINGS
 from .geometry   import *
-#from .readwrite  import *
 from .io         import *
 from .light      import get_photosphere_on_ray
 from .eos        import get_eos, get_eos_opacity

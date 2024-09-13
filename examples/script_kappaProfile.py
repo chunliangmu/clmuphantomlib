@@ -32,11 +32,10 @@ from os import path
 # import my modules listed in ./main/
 
 from main import clmuphantomlib as mupl
-#from main.clmuphantomlib.readwrite import json_load
 from main.clmuphantomlib.log import is_verbose, say
 from main.clmuphantomlib.settings   import DEFAULT_SETTINGS as settings
 from main.clmuphantomlib.units_util import get_val_in_unit #set_as_quantity, get_units_field_name, get_units_cgs
-from main.clmuphantomlib.eos_mesa   import EoS_MESA_opacity
+from main.clmuphantomlib.eos        import EoS_MESA_opacity
 from multiprocessing import cpu_count, Pool #Process, Queue
 NPROCESSES = 1 if cpu_count() is None else max(cpu_count(), 1)
 

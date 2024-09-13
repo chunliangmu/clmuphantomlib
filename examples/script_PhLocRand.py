@@ -33,12 +33,11 @@ import matplotlib as mpl
 # import my modules listed in ./main/
 
 import clmuphantomlib as mupl
-#from main.clmuphantomlib.readwrite import json_load
 from clmuphantomlib.log import is_verbose, say
 from clmuphantomlib.settings   import DEFAULT_SETTINGS as settings
 from clmuphantomlib.units_util import get_val_in_unit #set_as_quantity, get_units_field_name, get_units_cgs
-from clmuphantomlib.readwrite  import json_dump, json_load
-from clmuphantomlib.eos_mesa   import EoS_MESA_opacity
+from clmuphantomlib.io         import json_dump, json_load
+from clmuphantomlib.eos        import EoS_MESA_opacity
 from clmuphantomlib import MyPhantomDataFrames, get_eos
 from clmuphantomlib.light import get_optical_depth_by_ray_tracing_3D, get_photosphere_on_ray
 from multiprocessing import cpu_count, Pool #Process, Queue
@@ -126,7 +125,7 @@ def get_rand_rays_unit_vec(ray_no: int, cos_theta_mid: None|float = None, cos_th
 def get_ph_vals(
     vals_names: list,
     mpdf: MyPhantomDataFrames,
-    eos: mupl.eos_base.EoS_Base,
+    eos: mupl.eos.EoS_Base,
     rays_unit_vecs : np.ndarray, # (ray_no, 3)-shaped
     verbose: int,
 ):

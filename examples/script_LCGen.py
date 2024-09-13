@@ -48,8 +48,8 @@ from clmuphantomlib            import MyPhantomDataFrames, get_eos
 from clmuphantomlib.log        import is_verbose, say
 from clmuphantomlib.settings   import DEFAULT_SETTINGS as settings
 from clmuphantomlib.units_util import get_val_in_unit, set_as_quantity #, get_units_field_name, get_units_cgs
-from clmuphantomlib.readwrite  import json_dump, json_load
-from clmuphantomlib.eos_mesa   import EoS_MESA_opacity
+from clmuphantomlib.io         import json_dump, json_load
+from clmuphantomlib.eos        import EoS_MESA_opacity
 from clmuphantomlib.light      import get_optical_depth_by_ray_tracing_3D, get_photosphere_on_ray
 
 from multiprocessing import cpu_count, Pool #Process, Queue
@@ -94,7 +94,7 @@ from clmuphantomlib.log import say, is_verbose
 from clmuphantomlib.geometry import get_dist2_between_2pt, get_closest_pt_on_line
 from clmuphantomlib.sph_interp import get_sph_interp, get_h_from_rho, get_no_neigh, _get_sph_interp_phantom_np
 from clmuphantomlib.units_util import set_as_quantity, set_as_quantity_temperature, get_units_field_name
-from clmuphantomlib.eos_base import EoS_Base
+from clmuphantomlib.eos import EoS_Base
 from clmuphantomlib.light import integrate_along_ray_grid, integrate_along_ray_gridxy
 
 #  import (general)
