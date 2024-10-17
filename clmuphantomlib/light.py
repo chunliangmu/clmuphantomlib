@@ -40,7 +40,7 @@ import itertools
 # get optical depth by ray-tracing
 
 
-def get_optical_depth_by_ray_tracing_3D(
+def get_optical_depth(
     sdf    : sarracen.SarracenDataFrame,
     ray    : np.ndarray,
     kernel : sarracen.kernels.BaseKernel = None,
@@ -117,6 +117,8 @@ def get_optical_depth_by_ray_tracing_3D(
     
     return pts_on_ray, dtaus, pts_order
 
+get_optical_depth_by_ray_tracing_3D = get_optical_depth
+
 
 
 
@@ -150,7 +152,7 @@ def get_photosphere_on_ray(
     Parameters
     ----------
     pts_on_ray, dtaus, pts_order
-        output from get_optical_depth_by_ray_tracing_3D().
+        output from get_optical_depth().
 
         pts_on_ray: np.ndarray
             Orthogonal projections of the particles' locations onto the ray.
