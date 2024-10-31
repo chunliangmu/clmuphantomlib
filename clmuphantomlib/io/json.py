@@ -197,6 +197,7 @@ def _json_decode(
 
     overwrite_obj: bool
         If False, will copy the obj before modifying to avoid changing the raw data
+            (This behavior is not guaranteed)
         
     load_metadata: bool
         Load meta data from loaded dict (top level only).
@@ -237,7 +238,7 @@ def _json_decode(
                     return np.array(obj['_data_'])
             elif obj['_type_'] == 'astropy.units.Quantity':
                 if '_data_' in obj.keys() and '_unit_' in obj.keys():
-                    return units.Quantity(value=obj['_data_'], unit=obj['_unit_'], copy=(not overwrite_obj))
+                    return units.Quantity(value=obj['_data_'], unit=obj['_unit_'])#, copy=(not overwrite_obj))
             else:
                 say('warn', '_json_decode()', verbose,
                     f"Unrecognized obj['_type_']= {obj['_type_']}",
