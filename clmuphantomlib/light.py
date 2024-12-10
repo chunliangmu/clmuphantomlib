@@ -270,7 +270,7 @@ def get_photosphere_on_ray(
         kernel = sdf.kernel
     if do_skip_zero_dtau_pts:
         pts_order = pts_order[np.where(dtaus[pts_order])[0]]
-    ray_0 = np.asarray(ray[0], copy=False)
+    ray_0 = np.asarray(ray[0])
     pts_ordered    = np.array(sdf[['x', 'y', 'z']].iloc[pts_order])
     hs_ordered     = np.array(sdf[ 'h'           ].iloc[pts_order])
     #kappas_ordered = np.array(sdf[ 'kappa'       ].iloc[pts_order])
@@ -321,7 +321,9 @@ def get_photosphere_on_ray(
 
     # prepare answers
     # is found?
-    if np.isfinite(taus_waypts[-1]):
+    if not taus_waypts.size:
+        taus_max = 0
+    elif np.isfinite(taus_waypts[-1]):
         # in case there is nan in the later part of the array
         taus_max = taus_waypts[-1]
     else:
@@ -334,7 +336,7 @@ def get_photosphere_on_ray(
     if calc_params:
         # always calc location if anything needs to be calc-ed
         photosphere['loc'] = np.array([
-            np.interp(photosphere_tau, taus_waypts, pts_waypts[:, ax], right=np.nan)
+            np.interp(photosphere_tau, taus_waypts, pts_waypts[:, ax], right=np.nan) if taus_waypts.size else np.nan
             for ax in range(pts_waypts.shape[1])
         ])
 
@@ -353,7 +355,7 @@ def get_photosphere_on_ray(
                 # already calc-ed
                 pass
             elif calc_name == 'R1':
-                photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan)
+                photosphere['R1']  = np.interp(photosphere_tau, taus_waypts, pts_waypts_t, right=np.nan) if taus_waypts.size else np.nan
             elif calc_name in {'rho', 'u'}:
                 photosphere[calc_name]  = get_sph_interp(sdf, calc_name, photosphere['loc'], kernel=kernel, verbose=verbose)
             elif calc_name in {'nneigh'}:
