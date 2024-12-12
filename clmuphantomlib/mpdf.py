@@ -36,7 +36,6 @@ from astropy import constants as const
 import sarracen
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from moviepy.editor import ImageSequenceClip
 
 
 

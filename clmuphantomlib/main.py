@@ -50,8 +50,11 @@ import sarracen
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 # importing moviepy libraries
-from moviepy.editor import ImageSequenceClip
-
+try:
+    from moviepy.editor import ImageSequenceClip
+except RuntimeError as e:
+    print(e)
+    ImageSequenceClip = None
 
 
 
