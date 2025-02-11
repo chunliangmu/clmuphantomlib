@@ -74,6 +74,7 @@ def complete_units_dict(base_units: dict) -> dict:
     """
     base_units['dimless'] = units.dimensionless_unscaled
     base_units['speed']   = base_units['dist'] / base_units['time']
+    base_units['angularMomentum'] = base_units['mass'] * base_units['speed'] * base_units['dist']
     base_units['energy']  = base_units['mass'] * base_units['speed']**2
     base_units['specificEnergy'] = base_units['energy'] / base_units['mass']
     base_units['lum']     = base_units['energy'] / base_units['time']
