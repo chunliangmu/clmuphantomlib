@@ -74,6 +74,7 @@ def complete_units_dict(base_units: dict) -> dict:
     """
     base_units['dimless'] = units.dimensionless_unscaled
     base_units['speed']   = base_units['dist'] / base_units['time']
+    base_units['linearMomentum']  = base_units['mass'] * base_units['speed']
     base_units['angularMomentum'] = base_units['mass'] * base_units['speed'] * base_units['dist']
     base_units['energy']  = base_units['mass'] * base_units['speed']**2
     base_units['specificEnergy'] = base_units['energy'] / base_units['mass']
@@ -97,7 +98,13 @@ def get_units_field_name(val_name: str) -> str:
     """
     if   val_name in {'rho'}:
         return 'density'
-    elif val_name in {'u'}:
+    elif val_name in {'p', 'linearMomentum', 'momentum'}:
+        return 'linearMomentum'
+    elif val_name in {'l', 'angularMomentum'}:
+        return 'angularMomentum'
+    elif val_name in {'E', 'energy'}:
+        return 'energy'
+    elif val_name in {'u', 'specificEnergy'}:
         return 'specificEnergy'
     elif val_name in {'T', 'temp', 'temperature', 'Tdust', 'Tgas', 'Teff'}:
         return 'temp'
