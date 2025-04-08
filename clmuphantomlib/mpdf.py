@@ -526,7 +526,7 @@ class MyPhantomDataFrames:
                 if is_verbose(verbose, 'err'):
                     say('err', None, verbose,
                         f"In {self.time = } Less than two sink particles detected. Cannot calc orb_sep.")
-                return np.nan
+                return set_as_quantity(np.nan, unit)
             else:
                 if is_verbose(verbose, 'warn'):
                     say('warn', None, verbose,
