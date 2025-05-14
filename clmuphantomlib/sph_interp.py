@@ -827,7 +827,7 @@ def get_sph_gradient_phantom(
     xyzs_names_list : list = ['x', 'y', 'z'],
     #method   : str = 'improved',
     parallel : bool = False,
-    return_nneighs: bool = False,
+    return_nneighs_z: bool = False,
     verbose  : int = 3,
 ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     """Getting the gradient for each SPH particles.
@@ -886,8 +886,8 @@ def get_sph_gradient_phantom(
     parallel: bool
         Whether to parallel neighbour search process.
 
-    return_nneigh: bool
-        if True, will return both the gradient and the no of neighbours per loc
+    return_nneighs_z: bool
+        if True, will return both the gradient and the no of neighbours (that is located at higher z) per loc
 
     verbose: int
         How much warnings, notes, and debug info to be print on screen. 
@@ -909,7 +909,8 @@ def get_sph_gradient_phantom(
     -------
     ans  : (nlocs, ndim, nvals)-shaped np.ndarray
     (optional)
-        nneighs: (nlocs)-shaped np.ndarray
+        nneighs_z: (nlocs, 2)-shaped np.ndarray
+            return no of neighbours with higher z and lower z value
     """
 
     xyzs = np.asarray(sdf[xyzs_names_list], order='C') # shape=(npart, ndim)
@@ -945,8 +946,8 @@ def get_sph_gradient_phantom(
     npart = vals.shape[0]
     nvals = vals.shape[1]
     ans = np.zeros((nlocs, ndim, nvals), dtype=vals.dtype)
-    if return_nneighs:
-        nneighs = np.zeros(nlocs, dtype=np.int64)
+    if return_nneighs_z:
+        nneighs_z = np.zeros((nlocs, 2), dtype=np.int64)
 
 
     nworker = -1 if parallel else 1
@@ -981,14 +982,15 @@ def get_sph_gradient_phantom(
             * rs_ij_hat[:, :, np.newaxis],
         axis=0)
 
-        if return_nneighs:
-            nneighs[i] = len(js)
+        if return_nneighs_z:
+            nneighs_z[i, 0] = np.count_nonzero(xyzs[js][:, -1] > locs[i][-1])
+            nneighs_z[i, 1] = len(js) - nneighs_z[i, 0]
 
     
     ans /= hfact**ndim
     
-    if return_nneighs:
-        return ans, nneighs
+    if return_nneighs_z:
+        return ans, nneighs_z
         
     return ans
 
