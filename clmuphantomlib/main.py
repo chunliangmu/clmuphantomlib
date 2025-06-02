@@ -358,8 +358,8 @@ def get_opacity_dust_bowen1988(Teq, kmax, Tcond, delta, kappa_gas=0.*(units.cm**
     kmax = set_as_quantity(kmax, unit=(units.cm**2/units.g), copy=False)
     kappa_gas = set_as_quantity(kappa_gas, unit=(units.cm**2/units.g), copy=False)
     
-    kappa_dust = kmax / ( 1 + np.exp((Teq - Tcond)/delta) )
-    kappa = kappa_dust + kappa_gas
+    kappaDust = kmax / ( 1 + np.exp((Teq - Tcond)/delta) )
+    kappa = kappaDust + kappa_gas
     return kappa
 
 
