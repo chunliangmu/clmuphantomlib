@@ -88,11 +88,12 @@ class MyPhantomDataFrames:
                 f"G={self.const['G']} {self.units['G']}\n",
                 f"sigma_sb={self.const['sigma_sb']} {self.units['sigma_sb']}\n",
             )
-        
     
-    def get_filename(self) -> str:
+    def get_filename(self, job_name=None, file_index=None) -> str:
         """Return filename from self.job_name and self.file_index."""
-        return get_filename_phantom_dumps(job_name=self.job_name, file_index=self.file_index)
+        if job_name is None: job_name = self.job_name
+        if file_index is None: file_index = self.file_index
+        return get_filename_phantom_dumps(job_name=job_name, file_index=file_index)
     
     def get_time(self, unit=units.year) -> units.Quantity:
         """Return time of the dump as an astropy Quantity."""
@@ -237,6 +238,41 @@ class MyPhantomDataFrames:
         self.calc_sdf_params(calc_params=calc_params, calc_params_params=calc_params_params, verbose=verbose)
         
         return self
+
+    def write(
+        self,
+        job_name, file_index=None,
+        drop_cols: list = ['m', 'rho', 'v'],
+        verbose : int = 3,
+    ):
+        """
+        Write phantom data.
+
+        Requires the newest sarracen version (https://github.com/ttricco/sarracen)
+        i.e. sarrcen v1.2.3 won't work for this- need newer version, or fork their code from github
+
+        Make sure drop_cols contains all additional column names unnecessary for phantom.
+        
+        Parameters
+        ----------
+        job_name: str
+            the job name of the dump (e.g. for ../binary_00123, it is "../binary")
+            
+        file_index: int
+            the number of the dump (e.g. for ../binary_00123, it is 123)
+        """
+        if file_index is None: file_index = self.file_index
+        filename = get_filename_phantom_dumps(job_name, file_index)
+        sdf = self.data['gas']
+        sdf = sdf.drop(columns=drop_cols)
+        sdf_sink = self.data['sink'] if 'sink' in self.data else None
+        say('note', None, verbose,
+            f"Writing to '{filename}'",
+            f"\tData shape: {len(sdf.keys())} columns, {len(sdf)} particles.\n\t\t{sdf.keys()}",
+            f"\tSinks     : {len(sdf_sink.keys())} columns, {len(sdf_sink)} particles.\n\t\t{sdf_sink.keys()}" if sdf_sink is not None else "",
+        )
+        sarracen.write_phantom(f"{filename}", sdf, sdf_sink)
+        
 
 
     def reset_xyz_by(
