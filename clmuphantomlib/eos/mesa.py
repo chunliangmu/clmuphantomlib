@@ -13,7 +13,7 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from ..log import error, warn, note, debug_info
+from ..log import is_verbose, say
 from ..settings   import Settings, DEFAULT_SETTINGS
 from ..io  import fortran_read_file_unformatted
 from ..units_util import set_as_quantity, get_units_cgs
@@ -353,15 +353,13 @@ class _EoS_MESA_table:
         for i_Z, Z_float, Z_str in zip(range(no_Z), self._Z_arr, self._Z_str):
             # sanity check
             if f'{Z_float:.2f}' != Z_str:
-                warn(
-                    '_load_mesa_eos_table()', verbose,
+                say('warn', None, verbose,
                     f"{Z_float=} is not the same as {Z_str=}.",
                 )
             for i_X, X_float, X_str in zip(range(no_X), self._X_arr, self._X_str):
                 # sanity check
                 if f'{X_float:.2f}' != X_str:
-                    warn(
-                        '_load_mesa_eos_table()', verbose,
+                    say('warn', None, verbose,
                         f"{X_float} is not the same as {X_str=}.",
                     )
                 with open(f"{self._data_dir}{os.path.sep}output_DE_z{Z_str}x{X_str}.bindata", 'rb') as f:
@@ -373,9 +371,8 @@ class _EoS_MESA_table:
                     if self._log10_V_arr is None:
                         self._log10_V_arr = logV_float
                     elif not np.allclose(self._log10_V_arr, logV_float):
-                        warn(
-                            '_load_mesa_eos_table()', verbose,
-                            "Warning: logV array not the same across the data files.",
+                        say('warn', None, verbose,
+                            "logV array not the same across the data files.",
                             "This is not supposed to happen! Check the code and the data!",
                         )
     
@@ -383,8 +380,7 @@ class _EoS_MESA_table:
                     if self._log10_E_arr is None:
                         self._log10_E_arr = logE_float
                     elif not np.allclose(self._log10_E_arr, logE_float):
-                        warn(
-                            '_load_mesa_eos_table()', verbose,
+                        say('warn', None, verbose,
                             "Warning: logE array not the same across the data files.",
                             "This is not supposed to happen! Check the code and the data!",
                         )
@@ -471,7 +467,7 @@ class _EoS_MESA_table:
         _interp_coord = (log10_E, log10_V)
 
         # interpret val_name
-        if val_name in ['rho', 'P', 'Pgas', 'T']:
+        if val_name in {'rho', 'P', 'Pgas', 'T'}:
             # data in table stored as log10
             val_type = 'log10_' + val_name
         else:
@@ -481,7 +477,7 @@ class _EoS_MESA_table:
         ans = self._interp_dict[val_type](_interp_coord, method=method)
 
         # post-processing
-        if val_name in ['rho', 'P', 'Pgas', 'T']:
+        if val_name in {'rho', 'P', 'Pgas', 'T'}:
             ans = 10**ans
 
         return ans
@@ -543,7 +539,8 @@ class EoS_MESA(EoS_Base):
         ans: np.ndarray | units.Quantity
             calc-ed EoS values.
         """
-        debug_info("EoS_MESA.get_val_cgs()", verbose, "Calling this.")
+        if is_verbose(verbose, 'debug'):
+            say('debug', None, verbose, "Calling EoS_MESA.get_val_cgs().")
         return self.__mesa_table.get_val_cgs(
             val_name, rho, u, *params_list,
             method=method, verbose=verbose,
