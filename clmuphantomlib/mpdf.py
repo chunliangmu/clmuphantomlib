@@ -264,8 +264,11 @@ class MyPhantomDataFrames:
         if file_index is None: file_index = self.file_index
         filename = get_filename_phantom_dumps(job_name, file_index)
         sdf = self.data['gas']
-        sdf = sdf.drop(columns=drop_cols)
         sdf_sink = self.data['sink'] if 'sink' in self.data else None
+        # fix sdfs
+        sdf = sdf.drop(columns=drop_cols)
+        if sdf.params['nparttot'] != len(sdf):
+            raise ValueError(f"{sdf.params['nparttot'] = } is not {len(sdf)}- Please fix the mpdf.data[].params before continuing")
         say('note', None, verbose,
             f"Writing to '{filename}'",
             f"\tData shape: {len(sdf.keys())} columns, {len(sdf)} particles.\n\t\t{sdf.keys()}",
