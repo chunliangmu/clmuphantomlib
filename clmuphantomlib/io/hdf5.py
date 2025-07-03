@@ -35,6 +35,7 @@ HDF5_ATTRS_ACCEPTABLE_TYPES : tuple = (
     int, float, str,
     bool, np.bool_,
     np.float32, np.float64,
+    np.int32, np.int64,
 )
 
 
@@ -162,11 +163,11 @@ def _hdf5_dump_sub(
             else:
                 # parse into data and dump
                 
-                if   isinstance(obj, type(None)):
+                if   isinstance( obj, type(None) ):
                     sav = grp.create_dataset(key, dtype='f')
                     sav.attrs['_type_'] = 'None'
                     
-                elif isinstance(obj, HDF5_ATTRS_ACCEPTABLE_TYPES):
+                elif isinstance( obj, HDF5_ATTRS_ACCEPTABLE_TYPES ):
                     if ('_meta_' in data.keys() and key in data['_meta_'].keys()) or (isinstance(metadata, dict) and key in metadata.keys()):
                         sav = grp.create_dataset(key, dtype='f')
                         sav.attrs['_data_'] = obj
@@ -207,6 +208,10 @@ def _hdf5_dump_sub(
                     sav.attrs['_type_'] = 'astropy.units.Quantity'
                     sav.attrs['_unit_'] = get_str_from_astropyUnit(obj.unit)
 
+                elif isinstance(obj, type):
+                    sav = grp.create_dataset(key, dtype=obj)
+                    sav.attrs['_type_'] = 'type'
+
                 elif isinstance(obj, dict):
                     sav = grp.create_group(key)
                     _hdf5_dump_sub(obj, sav, metadata=None, add_metadata=False, verbose=verbose)
@@ -215,7 +220,8 @@ def _hdf5_dump_sub(
                 else:
                     # Not yet implemented
                     if is_verbose(verbose, 'fatal'):
-                        raise NotImplementedError(f"I haven't yet implemented storing data type {type(obj)} in hdf5.")
+                        raise NotImplementedError(
+                            f"I haven't yet implemented storing data type {type(obj)} in hdf5 for data['{key}'] = {obj}")
 
                 
         if '_meta_' in data.keys():
@@ -279,7 +285,7 @@ def _hdf5_load_sub(
             
             obj = grp[key]
 
-            if   isinstance(obj, h5py.Group  ):    # is dict
+            if isinstance(obj, h5py.Group):    # is dict
 
                 if load_metadata:
                     data['_meta_'][key] = dict(obj.attrs)
@@ -322,7 +328,7 @@ def _hdf5_load_sub(
                     elif is_verbose(verbose, 'err'):
                         say('err', None, verbose, f"Unexpected input {dict(obj.attrs)=}")
 
-                else:                 # is scalar
+                else:    # is scalar
                     
                     # load data
                     data[key] = None
@@ -335,6 +341,8 @@ def _hdf5_load_sub(
                     if '_type_' in obj.attrs.keys() and obj.attrs['_type_']:
                         if   obj.attrs['_type_'] in {'None'}:
                             data[key] = None
+                        if   obj.attrs['_type_'] in {'type'}:
+                            data[key] = obj.dtype
                         elif obj.attrs['_type_'] in {'numpy.ndarray'}:
                             data[key] = np.array(data[key])
                         elif obj.attrs['_type_'] in {'astropy.units.Quantity'} and '_unit_' in obj.attrs.keys():
