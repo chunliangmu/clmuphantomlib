@@ -112,6 +112,7 @@ def get_col_kernel_funcs(
         Cumulative summed kernel along z axis.
         Returns \\int_{-w_\\mathrm{rad}}^{q_z} w(\\sqrt{q_{xy}^2 + q_z^2}) dq_z
 
+    _a for accepting array instead of scalar as input
     """
 
     kernel_rad = kernel.get_radius()
