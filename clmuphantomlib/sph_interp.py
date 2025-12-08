@@ -38,7 +38,7 @@ import numpy as np
 from numpy import typing as npt
 from scipy.spatial import kdtree
 import numba
-from numba import jit
+from numba import jit, prange
 from astropy import units
 import sarracen
 
@@ -593,7 +593,7 @@ def _get_sph_interp_phantom_np_basic(
 
 
 
-@jit(nopython=True)
+@jit(nopython=True, parallel=True)
 def _get_sph_interp_phantom_np(
     locs : np.ndarray,
     vals : np.ndarray,
@@ -643,11 +643,14 @@ def _get_sph_interp_phantom_np(
     # h * w_rad
     hw_rad = kernel_rad * hs
 
-    for j in range(npart):
-        # pre-select
-        maybe_neigh = np.abs(locs - xyzs[j][np.newaxis, :]) < hw_rad[j]
+    for j in prange(npart):
+        x, y, z = xyzs[j]
+        hw = hw_rad[j]
         for i in range(nlocs):
-            if np.all(maybe_neigh[i]):
+            lx, ly, lz = locs[i]
+            # pre-select
+            # maybe_neigh = np.abs(locs - xyzs[j][np.newaxis, :]) < hw_rad[j]
+            if abs(lx - x) < hw and abs(ly - y) < hw and abs(lz - z) < hw:
                 q_ij = np.sum((locs[i] - xyzs[j])**2)**0.5 / hs[j]
                 if q_ij <= kernel_rad:
                     w_q = kernel_w(q_ij, ndim)
