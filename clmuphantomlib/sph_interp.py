@@ -771,7 +771,7 @@ def get_sph_interp_phantom(
     if is_verbose(verbose, 'warn'):
         val_names_set = {val_names} if isinstance(val_names, str) else set(val_names)
         if val_names_set.difference({'rho', 'u', 'vx', 'vy', 'vz', 'vr'}):
-            say('warn', None, verbose,
+            say('info', None, verbose,
                 "Kernel interpolation should be used with conserved quantities (density, energy, momentum),",
                 f"but you are trying to do it with '{val_names}', which could lead to problematic results.",
             )
