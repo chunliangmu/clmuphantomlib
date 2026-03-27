@@ -180,7 +180,13 @@ class MyPhantomDataFrames:
         #self.total_mass = self.params['nparttot'] * self.params['mass'] + self.data['sink']['m'].sum()
         
         # get mass & CoM
-        self.data['gas'].create_mass_column()
+        if 'mass' in self.params:
+            self.data['gas'].create_mass_column()
+        elif 'apr_level' in self.data['gas']:
+            # APR (adaptive particle refinement) case
+            # self.data['gas']['m'] = self.data['gas']['mass']    # does not work for some reason - some entries in 'mass' col are corrupted
+            self.data['gas']['m'] = self.params['massoftype'] / np.float64(2)**(self.data['gas']['apr_level']-1)
+            self.data['gas']['mass'] = self.data['gas']['m']    # temp fix for the corrupted 'mass' column
         self.total_mass = np.sum([sdf['m'].sum() for sdf in self.sdfs])
         self.loc_CoM = self.get_loc_CoM()
 
