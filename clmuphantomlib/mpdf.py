@@ -180,13 +180,15 @@ class MyPhantomDataFrames:
         #self.total_mass = self.params['nparttot'] * self.params['mass'] + self.data['sink']['m'].sum()
         
         # get mass & CoM
-        if 'mass' in self.params:
-            self.data['gas'].create_mass_column()
-        elif 'apr_level' in self.data['gas']:
+        if 'apr_level' in self.data['gas']:
             # APR (adaptive particle refinement) case
-            # self.data['gas']['m'] = self.data['gas']['mass']    # does not work for some reason - some entries in 'mass' col are corrupted
-            self.data['gas']['m'] = self.params['massoftype'] / np.float64(2)**(self.data['gas']['apr_level']-1)
-            self.data['gas']['mass'] = self.data['gas']['m']    # temp fix for the corrupted 'mass' column
+            sarracen.readers.read_phantom._create_aprmass_column(self.data['gas'], self.data['gas'].params)
+        elif 'itype' in self.data['gas']:
+            sarracen.readers.read_phantom._create_mass_column(self.data['gas'], self.data['gas'].params)
+        else:
+            # normal case
+            self.data['gas']['mass'] = self.params['massoftype']
+        self.data['gas']['m'] = self.data['gas']['mass']    # compatibility fix- my old code assume mass col named 'm'
         self.total_mass = np.sum([sdf['m'].sum() for sdf in self.sdfs])
         self.loc_CoM = self.get_loc_CoM()
 
