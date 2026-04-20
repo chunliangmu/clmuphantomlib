@@ -51,7 +51,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 # importing moviepy libraries
 try:
-    from moviepy.editor import ImageSequenceClip
+    from moviepy import ImageSequenceClip
 except RuntimeError as e:
     print(e)
     ImageSequenceClip = None

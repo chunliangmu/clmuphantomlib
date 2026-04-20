@@ -15,7 +15,7 @@ Owner: Chunliang Mu
 
 
 #  import (my libs)
-from ..log import error, warn, note, debug_info
+from ..log import is_verbose, say
 from ..settings import Settings, DEFAULT_SETTINGS
 from .base import EoS_Base
 from .mesa import EoS_MESA, EoS_MESA_opacity
