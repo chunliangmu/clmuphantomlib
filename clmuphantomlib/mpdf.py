@@ -81,6 +81,8 @@ class MyPhantomDataFrames:
         
         self.const['G'] = const.G.to_value(self.units['G'])
         self.const['sigma_sb'] = const.sigma_sb.to_value(self.units['sigma_sb'])
+        self.const['k_B'] = const.k_B.to_value(self.units['k_B'])
+        self.const['m_p'] = const.m_p.to_value(self.units['mass'])
         if is_verbose(verbose, 'debug'):
             say(
                 'debug', None, verbose,

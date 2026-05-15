@@ -84,6 +84,7 @@ def complete_units_dict(base_units: dict) -> dict:
     base_units['opacity'] = base_units['dist']**2 / base_units['mass']
     base_units['G'] = base_units['dist']**3 / ( base_units['mass'] * base_units['time']**2 )
     base_units['sigma_sb'] = base_units['lum'] / base_units['dist']**2 / base_units['temp']**4
+    base_units['k_B'] = base_units['energy']/base_units['temp']
     if None in base_units.keys():
         # remove None, because
         #    in other places I would set key=None when something goes wrong,
