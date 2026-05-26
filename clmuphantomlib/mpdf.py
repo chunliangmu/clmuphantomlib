@@ -304,17 +304,23 @@ class MyPhantomDataFrames:
         if not what:
             # do nothing
             return self
-        elif what in {'CoM'}:
+        if what in {'R1', 'primary'}:
+            if 'sink' in self.data:
+                reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
+                return self
+            what = 'CoM'
+            say('warn', None, verbose,
+                f"sink not found in data, cannot reset xyz by '{what}'. Resetting it by CoM instead.")
+        if what in {'CoM'}:
             self.loc_CoM = self.get_loc_CoM()
             reset_xyz_by_arr = self.loc_CoM
-        elif what in {'R1', 'primary'}:
-            reset_xyz_by_arr = np.array(self.data['sink'][['x', 'y', 'z']].iloc[0])
-        else:
-            if is_verbose(verbose, 'err'):
-                say('err', None, verbose,
-                    f"Unknown coordinates center reseting center str {what = }",
-                    "Action Cancelled.")
             return self
+        
+        if is_verbose(verbose, 'err'):
+            say('err', None, verbose,
+                f"Unknown coordinates center reseting center str {what = }",
+                "Action Cancelled.")
+        return self
             
         if is_verbose(verbose, 'note'):
             say('note', None, verbose,
