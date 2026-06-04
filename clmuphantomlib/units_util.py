@@ -82,6 +82,7 @@ def complete_units_dict(base_units: dict) -> dict:
     base_units['flux']    = base_units['lum'] / base_units['dist']**2
     base_units['density'] = base_units['mass'] / base_units['dist']**3
     base_units['opacity'] = base_units['dist']**2 / base_units['mass']
+    base_units['pressure']= base_units['mass'] / (base_units['dist'] * base_units['time']**2)
     base_units['G'] = base_units['dist']**3 / ( base_units['mass'] * base_units['time']**2 )
     base_units['sigma_sb'] = base_units['lum'] / base_units['dist']**2 / base_units['temp']**4
     base_units['k_B'] = base_units['energy']/base_units['temp']
@@ -121,7 +122,9 @@ def get_units_field_name(val_name: str) -> str:
         return 'opacity'
     elif val_name in {'lum'}:
         return 'lum'
-    elif val_name in {'tau', 'opticalDepth', 'nneigh'}:
+    elif val_name in {'P', 'pressure'}:
+        return 'pressure'
+    elif val_name in {'tau', 'opticalDepth', 'nneigh', 'apr_level'}:
         return 'dimless'
     else:
         raise NotImplementedError
