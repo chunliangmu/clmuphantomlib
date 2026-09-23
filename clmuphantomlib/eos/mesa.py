@@ -89,7 +89,7 @@ class _EoS_MESA_table_opacity:
         if self._data_dir is None or not os.path.isdir(self._data_dir):
             raise ValueError(f"settings['MESA_DATA_DIR']={self._data_dir} is not a valid directory.")
 
-        with open(f"{self._data_dir}{os.path.sep}opacs.bindata", 'rb') as f:
+        with open(f"{self._data_dir}{os.path.sep}..{os.path.sep}mesa_opac{os.path.sep}opacs.bindata", 'rb') as f:
             no_Z, no_X, no_R, no_T = fortran_read_file_unformatted(f, 'i', 4)
             # as for why does the order of z-x-r-t changed to z-x-t-r, I have zero idea
             self._Z_arr       = np.array(fortran_read_file_unformatted(f, 'd', no_Z))
